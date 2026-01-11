@@ -2,8 +2,11 @@ let xhr = null;
 
 function getServerStatus(callback) {
     xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/statusServer`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('GET', `${origin}/api/status_server`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             try {
@@ -14,11 +17,16 @@ function getServerStatus(callback) {
                 const response = JSON.parse(xhr.responseText);
                 if (xhr.status === 200) {
                     if (callback) callback(true, false, null, response);
-                } else if (xhr.status === 403) {
+                } else if (xhr.status === 403 || xhr.status === 401) {
                     if (callback) callback(false, true, 'Unauthorized', response);
                 } else if (response.hasOwnProperty('error')) {
-                    if (callback) callback(false, false, response.error);
-                } else {  
+                    // CSRF error or Unauthorized means we need to authenticate
+                    if (response.error === 'CSRF token is invalid' || response.error.includes('Unauthorized') || response.error.includes('Login required')) {
+                        if (callback) callback(false, true, response.error);
+                    } else {
+                        if (callback) callback(false, false, response.error);
+                    }
+                } else {
                     if (callback) callback(false, false, null, response);
                 }
             } catch {
@@ -33,16 +41,24 @@ function getServerStatus(callback) {
     xhr.send();
 }
 
-function login(username, password, callback) {
+function login(user, pass, callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/login`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('GET', `${origin}/api/check_auth?username=${encodeURIComponent(user)}&password=${encodeURIComponent(pass)}`, true);
+    const authHeader = 'Basic ' + btoa(user + ':' + pass);
+    xhr.setRequestHeader('Authorization', authHeader);
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            if (JSON.parse(xhr.responseText) !== false) {
-                if (callback) callback(true);
-            } else {
-                if (callback) callback(false, 'Login failed, invalid credentials');
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (xhr.status === 200 && response && Object.keys(response).length > 0) {
+                    setCredentials(user, pass, function() {
+                        if (callback) callback(true);
+                    });
+                } else {
+                    if (callback) callback(false, 'Login failed, invalid credentials');
+                }
+            } catch (e) {
+                if (callback) callback(false, 'Login failed, invalid response from server');
             }
         }
     }
@@ -50,13 +66,16 @@ function login(username, password, callback) {
     xhr.ontimeout = function() {
         if (callback) callback(false, 'Login failed, server unreachable');
     }
-    xhr.send(`username=${username}&password=${password}`);
+    xhr.send();
 }
 
 function getStatusDownloads(callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/statusDownloads`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('GET', `${origin}/api/status_downloads`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             const status = JSON.parse(xhr.responseText);
@@ -68,8 +87,11 @@ function getStatusDownloads(callback) {
 
 function getQueueData(callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/getQueueData`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('GET', `${origin}/api/get_queue_data`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
             const queueData = JSON.parse(xhr.responseText);
@@ -87,11 +109,14 @@ function getQueueData(callback) {
 
 function getLimitSpeedStatus(callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/getConfigValue?category="download"&option="limit_speed"`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('GET', `${origin}/api/get_config_value?category=download&option=limit_speed&section=core`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            const limitSpeed = JSON.parse(xhr.responseText).toLowerCase() === 'true';
+            const limitSpeed = JSON.parse(xhr.responseText).toString().toLowerCase() === 'true';
             if (callback) callback(limitSpeed);
         }
     }
@@ -100,44 +125,73 @@ function getLimitSpeedStatus(callback) {
 
 function setLimitSpeedStatus(limitSpeed, callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('POST', `${origin}/api/set_config_value`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
+    xhr.setRequestHeader('Content-type', 'application/json');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            const success = JSON.parse(xhr.responseText);
-            if (callback) callback(success);
+            if (callback) callback(xhr.status === 200);
         }
     }
-    xhr.send();
+    xhr.send(JSON.stringify({
+        category: "download",
+        option: "limit_speed",
+        value: limitSpeed,
+        section: "core"
+    }));
 }
 
 function addPackage(name, url, callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/addPackage`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('POST', `${origin}/api/add_package`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
+    xhr.setRequestHeader('Content-type', 'application/json');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            const response = JSON.parse(xhr.responseText);
-            if (response.hasOwnProperty('error')) {
-                if (callback) callback(false, response.error);
-            } else {
-                if (callback) callback(true);
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.hasOwnProperty('error')) {
+                    if (callback) callback(false, response.error);
+                } else {
+                    if (callback) callback(true);
+                }
+            } catch (e) {
+                if (callback) callback(xhr.status === 200);
             }
         }
     }
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
-    xhr.send(`name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`);
+    xhr.send(JSON.stringify({
+        name: safeName,
+        links: [url]
+    }));
 }
 
 function checkURL(url, callback) {
     let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/checkURLs`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+    xhr.open('POST', `${origin}/api/check_urls`, true);
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+        xhr.setRequestHeader('Authorization', authHeader);
+    }
+    xhr.setRequestHeader('Content-type', 'application/json');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            const response = JSON.parse(xhr.responseText);
-            if (callback) callback(!response.hasOwnProperty('BasePlugin') && !response.hasOwnProperty('error'));
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (callback) callback(!response.hasOwnProperty('BasePlugin') && !response.hasOwnProperty('error'));
+            } catch (e) {
+                if (callback) callback(false);
+            }
         }
     }
-    xhr.send(`urls=["${encodeURIComponent(url)}"]`);
+    xhr.send(JSON.stringify({
+        urls: [url]
+    }));
 }

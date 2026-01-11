@@ -1,7 +1,7 @@
 {
-  "name": "Yape",
-  "version": "1.1.2",
-  "description": "Extension for PyLoad to easily monitor and add downloads",
+  "name": "Yape (PyLoad 0.5.0+ HTTP Basic Auth)",
+  "version": "1.1.4",
+  "description": "Extension for PyLoad 0.5.0+ with HTTP Basic Authentication support",
   "permissions": ["activeTab", "storage", "contextMenus", "scripting"],
   "host_permissions": ["http://*/", "https://*/"],
   "action": {

@@ -61,7 +61,7 @@ function updateLoggedInStatus(callback) {
         if (!loggedIn && unauthorized) {
             loginStatusKODiv.innerHTML += `Please log in`;
         } else {
-            loginStatusKODiv.innerHTML += (error && error !== "CSRF token is invalid") ? error : `You are not logged in`;
+            loginStatusKODiv.innerHTML += error ? error : `You are not logged in`;
         }
         loginButton.hidden = !unauthorized;
         saveButton.disabled = false;
