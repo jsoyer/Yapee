@@ -1,3 +1,6 @@
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath } from './js/storage.js';
+import { login, isLoggedIn, abortServerStatus } from './js/pyload-api.js';
+
 let usernameInput = document.getElementById('username');
 let passwordInput = document.getElementById('password');
 let serverIpInput = document.getElementById('serverIp');
@@ -13,8 +16,25 @@ let saveButton = document.getElementById('saveButton');
 let loginButton = document.getElementById('loginButton');
 let loginButtonModal = document.getElementById('loginButtonModal');
 let alertDanger = document.getElementById('alertDanger');
+let rememberCredentials = document.getElementById('rememberCredentials');
+let rememberWarning = document.getElementById('rememberWarning');
+let loginModalInstance = null;
+let httpWarning = document.getElementById('httpWarning');
 
-let loginModal = $('#loginModal');
+let loginFailures = 0;
+let loginLockedUntil = 0;
+
+function loadLoginRateLimit(callback) {
+    chrome.storage.session.get(['loginFailures', 'loginLockedUntil'], function(data) {
+        loginFailures = data.loginFailures || 0;
+        loginLockedUntil = data.loginLockedUntil || 0;
+        if (callback) callback();
+    });
+}
+
+function saveLoginRateLimit() {
+    chrome.storage.session.set({ loginFailures, loginLockedUntil });
+}
 
 
 function enableSpinner() {
@@ -57,12 +77,14 @@ function updateLoggedInStatus(callback) {
         disableSpinner();
         loginStatusOKDiv.hidden = !loggedIn;
         loginStatusKODiv.hidden = loggedIn;
-        loginStatusKODiv.innerHTML = `<i class="fa fa-times small mr-3"></i>`
+        loginStatusKODiv.innerHTML = `<i class="fa fa-times small me-3"></i>`;
+        const msgSpan = document.createElement('span');
         if (!loggedIn && unauthorized) {
-            loginStatusKODiv.innerHTML += `Please log in`;
+            msgSpan.textContent = 'Please log in';
         } else {
-            loginStatusKODiv.innerHTML += error ? error : `You are not logged in`;
+            msgSpan.textContent = error ? error : 'You are not logged in';
         }
+        loginStatusKODiv.appendChild(msgSpan);
         loginButton.hidden = !unauthorized;
         saveButton.disabled = false;
         if (callback) callback();
@@ -91,9 +113,14 @@ function requestPermission(callback) {
 }
 
 function validHost(str) {
-    let pattern = new RegExp('^((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-        '((\\d{1,3}\\.){3}\\d{1,3}))$'); // OR ip (v4) address
-    return !!pattern.test(str);
+    if (!str) return false;
+    if (str === 'localhost') return true;
+    try {
+        const url = new URL(`http://${str.includes(':') ? `[${str}]` : str}`);
+        return !!url.hostname;
+    } catch {
+        return false;
+    }
 }
 
 function validateForm() {
@@ -108,7 +135,8 @@ function validateForm() {
         saveButton.disabled = true;
     }
     // Port
-    const isValidPort = /\d+/.test(serverPortInput.value);
+    const portNum = parseInt(serverPortInput.value, 10);
+    const isValidPort = /^\d{1,5}$/.test(serverPortInput.value) && portNum >= 1 && portNum <= 65535;
     if (isValidPort) {
         serverPortInput.classList.remove('is-invalid');
     } else {
@@ -127,9 +155,7 @@ function validateForm() {
 
 function requireSaving() {
     updateCurrentURL();
-    if (xhr !== null) {
-        xhr.abort();
-    }
+    abortServerStatus();
     if (serverIpInput.value === serverIp &&
         parseInt(serverPortInput.value) === parseInt(serverPort) &&
         useHTTPSInput.checked === (serverProtocol === 'https') &&
@@ -145,11 +171,12 @@ function requireSaving() {
 }
 
 function updateCurrentURL() {
-    portString = `:${serverPortInput.value}`;
+    let portString = `:${serverPortInput.value}`;
     if ((useHTTPSInput.checked && serverPortInput.value === '443') || (!useHTTPSInput.checked && serverPortInput.value === '80')) {
         portString = '';
     }
-    currentURL.innerHTML = `${useHTTPSInput.checked ? 'https' : 'http'}://${serverIpInput.value}${portString}${serverPathInput.value}`;
+    httpWarning.style.display = useHTTPSInput.checked ? 'none' : 'block';
+    currentURL.textContent = `${useHTTPSInput.checked ? 'https' : 'http'}://${serverIpInput.value}${portString}${serverPathInput.value}`;
 }
 
 saveButton.onclick = function(ev) {
@@ -161,25 +188,47 @@ saveButton.onclick = function(ev) {
 };
 
 loginButton.onclick = function(ev) {
-    loginModal.modal('show');
+    rememberCredentials.checked = false;
+    rememberWarning.hidden = true;
+    loginModalInstance = new bootstrap.Modal(document.getElementById('loginModal'));
+    loginModalInstance.show();
+}
+
+rememberCredentials.onchange = function() {
+    rememberWarning.hidden = !rememberCredentials.checked;
 }
 
 loginButtonModal.onclick = function(ev) {
+    const now = Date.now();
+    if (now < loginLockedUntil) {
+        const secs = Math.ceil((loginLockedUntil - now) / 1000);
+        setDangerMessage(`Too many attempts. Try again in ${secs}s.`, 0);
+        return;
+    }
     setDangerMessage('');
-    login(usernameInput.value, passwordInput.value, function(success, error_msg) {
+    login(usernameInput.value, passwordInput.value, rememberCredentials.checked, function(success, error_msg) {
         if (success) {
-            loginModal.modal('hide');
+            loginFailures = 0;
+            loginLockedUntil = 0;
+            saveLoginRateLimit();
+            if (loginModalInstance) loginModalInstance.hide();
             updateLoggedInStatus();
         } else {
-            setDangerMessage(error_msg, 0);
+            loginFailures++;
+            if (loginFailures >= 3) {
+                const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
+                loginLockedUntil = Date.now() + lockSecs * 1000;
+                saveLoginRateLimit();
+                setDangerMessage(`Too many attempts. Try again in ${lockSecs}s.`, 0);
+            } else {
+                saveLoginRateLimit();
+                setDangerMessage(error_msg, 0);
+            }
         }
     });
 }
 
-$(document).ready(function(){
-    $('[data-toggle="tooltip"]').tooltip();
-});
-
+loadLoginRateLimit();
 pullStoredData(function() {
     serverIpInput.value = serverIp;
     serverPortInput.value = serverPort;
@@ -193,5 +242,7 @@ pullStoredData(function() {
     useHTTPSInput.oninput = requireSaving;
     serverPathInput.oninput = requireSaving;
 
-    updateLoggedInStatus();
+    updateLoggedInStatus(function() {
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    });
 });

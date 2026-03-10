@@ -21,19 +21,36 @@ Features:
 
 ## Install
 
-**[Available on the Chrome Web Store](https://chrome.google.com/webstore/detail/yape/lbbofcfllogcmffofacfoiolglncdcgb)**  
+**[Available on the Chrome Web Store](https://chrome.google.com/webstore/detail/yape/lbbofcfllogcmffofacfoiolglncdcgb)**
 **[Available on Firefox Add-ons](https://addons.mozilla.org/firefox/addon/yape/)**
+
+### Developer install (load unpacked)
+
+1. Go to `chrome://extensions/`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked** and select this repository folder
+4. Click the extension icon → click the settings icon to configure
 
 
 ## Usage
 
 Go to the option page by clicking on the `settings` icon and fill the IP address and the port of the `PyLoad` server. Click `Save` and then `Login` to enter your credentials.
 
-> Note: The credentials are not stored on the browser, only the session cookie.  
+> Note: Credentials are stored locally in the browser (`chrome.storage.local`) and never synced across devices.  
 
 The current downloads are always displayed.
 If the current active tab has a downloadable file, an extra panel will be displayed with a button to start the download.
 A download can also be added by right-clicking on a link and selecting `Download with Yape`.
+
+
+## PyLoad compatibility
+
+| PyLoad version | Auth method | Status |
+|---|---|---|
+| < 0.5.0b3.dev78 | Session cookie | Works |
+| >= 0.5.0b3.dev78 | HTTP Basic Auth | Works |
+
+The extension automatically uses HTTP Basic Auth on every request. The old `/api/login` session endpoint (removed in dev78) is no longer used.
 
 
 ## Screenshot

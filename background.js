@@ -1,4 +1,4 @@
-importScripts('js/storage.js');
+import { pullStoredData, origin, getAuthHeaders } from './js/storage.js';
 
 const notify = function(title, message) {
     return chrome.notifications.create('', {
@@ -9,88 +9,46 @@ const notify = function(title, message) {
     });
 }
 
-const loadToastr = function(tab, callback) {
-    chrome.scripting.insertCSS({
-        target: {tabId: tab.id},
-        files: ['css/toastr.min.css']
-    }, function() {
-        chrome.scripting.executeScript({
-            target: {tabId: tab.id},
-            files: ['js/lib/jquery-3.5.1.min.js', 'js/lib/toastr.min.js']
-        }, function() {
-            chrome.scripting.executeScript({
-                target: {tabId: tab.id},
-                func: () => {
-                    toastr.options = {
-                        closeButton: false,
-                        newestOnTop: false,
-                        progressBar: false,
-                        positionClass: 'toastr-top-right',
-                        containerId: 'toastr-container',
-                        toastClass: 'toastr',
-                        iconClasses: {
-                            error: 'toastr-error',
-                            info: 'toastr-info',
-                            success: 'toastr-success',
-                            warning: 'toastr-warning'
-                        },
-                        iconClass: 'toastr-info',
-                        titleClass: 'toastr-title',
-                        messageClass: 'toastr-message',
-                        closeClass: 'toastr-close-button',
-                        timeOut: 8000
-                    };
-                }
-            }, function() {
-                callback();
-            });
-        });
-    });
-}
-
-const sendToast = function(tab, type, message) {
-    chrome.scripting.executeScript({
-        target: {tabId: tab.id},
-        func: (type, message) => {
-            toastr.remove();
-            toastr[type](message);
-        },
-        args: [type, message]
-    });
-}
-
-const downloadLink = function(info, tab) {
+async function downloadLink(info, tab) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-    fetch(`${origin}/api/statusServer`, { signal: controller.signal })
-        .then(response => response.json())
-        .then(json => {
-            clearTimeout(timeoutId);
-            if (json.hasOwnProperty('error')) {
-                if (json.error === 'Forbidden') sendToast(tab, 'error', `Invalid credentials, make sure you are logged in`);
-                else sendToast(tab, 'error', `Server unreachable`);
-                return;
-            }
-            fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(info.linkUrl)}"]`)
-                .then(response => response.json())
-                .then(json => {
-                    if (json.hasOwnProperty('error')) {
-                        sendToast(tab, 'error', `Error checking url: ${json}`);
-                        return;
-                    }
-                    const safeName = encodeURIComponent(info.linkUrl.replace(/[^a-z0-9._\-]/gi, '_'));
-                    fetch(`${origin}/api/addPackage?name="${safeName}"&links=["${encodeURIComponent(info.linkUrl)}"]`)
-                        .then(response => response.json())
-                        .then(json => {
-                            if (json.hasOwnProperty('error')) {
-                                sendToast(tab, 'error', `Error requesting download: ${json}`);
-                                return;
-                            }
-                            sendToast(tab, 'success', 'Download added successfully');
-                        });
-                });
-        })
-        .catch(e => sendToast(tab, 'error', `Server unreachable`));
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const statusRes = await fetch(`${origin}/api/statusServer`, { method: 'POST', redirect: 'error', signal: controller.signal, headers: { ...getAuthHeaders() } });
+        const statusJson = await statusRes.json();
+        clearTimeout(timeoutId);
+        if (Object.hasOwn(statusJson, 'error')) {
+            if (statusJson.error === 'Forbidden') notify('Yape', 'Invalid credentials, make sure you are logged in');
+            else notify('Yape', 'Server unreachable');
+            return;
+        }
+        const checkRes = await fetch(`${origin}/api/checkURLs`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            body: `urls=["${encodeURIComponent(info.linkUrl)}"]`
+        });
+        const checkJson = await checkRes.json();
+        if (Object.hasOwn(checkJson, 'error')) {
+            notify('Yape', `Error checking url: ${checkJson.error || 'unknown error'}`);
+            return;
+        }
+        const safeName = encodeURIComponent(info.linkUrl.replace(/[^a-z0-9._\-]/gi, '_'));
+        const addRes = await fetch(`${origin}/api/addPackage`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            body: `name="${safeName}"&links=["${encodeURIComponent(info.linkUrl)}"]`
+        });
+        const addJson = await addRes.json();
+        if (Object.hasOwn(addJson, 'error')) {
+            notify('Yape', `Error requesting download: ${addJson.error || 'unknown error'}`);
+            return;
+        }
+        notify('Yape', 'Download added successfully');
+    } catch (e) {
+        clearTimeout(timeoutId);
+        notify('Yape', 'Server unreachable');
+    }
 }
 
 chrome.runtime.onInstalled.addListener( () => {
@@ -101,19 +59,16 @@ chrome.runtime.onInstalled.addListener( () => {
     });
 });
 
-chrome.runtime.onMessage.addListener( data => {
+chrome.runtime.onMessage.addListener((data, sender) => {
+    if (sender.id !== chrome.runtime.id) return;
     if (data.type === 'notification') {
         notify(data.title, data.message);
     }
 });
 
-chrome.contextMenus.onClicked.addListener( ( info, tab ) => {
-    if ('yape' === info.menuItemId) {
-        loadToastr(tab, function() {
-            pullStoredData(function() {
-                sendToast(tab, 'info', 'Requesting download...');
-                downloadLink(info, tab);
-            });
-        });
-    }
-} );
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if ('yape' !== info.menuItemId) return;
+    pullStoredData(() => {
+        downloadLink(info, tab);
+    });
+});

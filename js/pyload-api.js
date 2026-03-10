@@ -1,78 +1,93 @@
-let xhr = null;
+import { origin, setCredentials, getAuthHeaders } from './storage.js';
 
-function getServerStatus(callback) {
-    xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/statusServer`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            try {
-                if (xhr.status === 404) {
-                    if (callback) callback(false, false, 'Server not found');
-                    return;
-                }
-                const response = JSON.parse(xhr.responseText);
-                if (xhr.status === 200) {
-                    if (callback) callback(true, false, null, response);
-                } else if (xhr.status === 403) {
-                    if (callback) callback(false, true, 'Unauthorized', response);
-                } else if (response.hasOwnProperty('error')) {
-                    if (callback) callback(false, false, response.error);
-                } else {  
-                    if (callback) callback(false, false, null, response);
-                }
-            } catch {
-                if (callback) callback(false, false, 'Server unreachable');
-            }
-        }
+let serverStatusController = null;
+
+export function abortServerStatus() {
+    if (serverStatusController) {
+        serverStatusController.abort();
+        serverStatusController = null;
     }
-    xhr.timeout = 5000;
-    xhr.ontimeout = function() {
+}
+
+export async function getServerStatus(callback) {
+    serverStatusController = new AbortController();
+    const timeoutId = setTimeout(() => serverStatusController.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/statusServer`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            signal: serverStatusController.signal
+        });
+        clearTimeout(timeoutId);
+        serverStatusController = null;
+        try {
+            if (res.status === 404) { if (callback) callback(false, false, 'Server not found'); return; }
+            const response = await res.json();
+            if (res.status === 200) { if (callback) callback(true, false, null, response); }
+            else if (res.status === 403) { if (callback) callback(false, true, 'Unauthorized', response); }
+            else if (Object.hasOwn(response, 'error')) { if (callback) callback(false, false, response.error); }
+            else { if (callback) callback(false, false, null, response); }
+        } catch { if (callback) callback(false, false, 'Server unreachable'); }
+    } catch {
+        clearTimeout(timeoutId);
+        serverStatusController = null;
         if (callback) callback(false, false, 'Server unreachable');
     }
-    xhr.send();
 }
 
-function login(username, password, callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/login`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (JSON.parse(xhr.responseText) !== false) {
+export function login(u, p, remember, callback) {
+    setCredentials(u, p, remember, () => {
+        getServerStatus(function(success, unauthorized, error) {
+            if (success) {
                 if (callback) callback(true);
-            } else {
+            } else if (unauthorized) {
+                setCredentials('', '', false, () => {});
                 if (callback) callback(false, 'Login failed, invalid credentials');
+            } else {
+                setCredentials('', '', false, () => {});
+                if (callback) callback(false, error || 'Login failed, server unreachable');
             }
-        }
-    }
-    xhr.timeout = 5000;
-    xhr.ontimeout = function() {
-        if (callback) callback(false, 'Login failed, server unreachable');
-    }
-    xhr.send(`username=${username}&password=${password}`);
+        });
+    });
 }
 
-function getStatusDownloads(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/statusDownloads`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const status = JSON.parse(xhr.responseText);
+export async function getStatusDownloads(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/statusDownloads`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const status = await res.json();
             if (callback) callback(status);
+        } catch {
+            if (callback) callback([]);
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback([]);
     }
-    xhr.send();
 }
 
-function getQueueData(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/getQueueData`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const queueData = JSON.parse(xhr.responseText);
+export async function getQueueData(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/getQueueData`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const queueData = await res.json();
             const urls = [];
             queueData.forEach(pack => {
                 pack.links.forEach(link => {
@@ -80,64 +95,116 @@ function getQueueData(callback) {
                 });
             });
             if (callback) callback(urls);
+        } catch {
+            if (callback) callback([]);
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback([]);
     }
-    xhr.send();
 }
 
-function getLimitSpeedStatus(callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/getConfigValue?category="download"&option="limit_speed"`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const limitSpeed = JSON.parse(xhr.responseText).toLowerCase() === 'true';
+export async function getLimitSpeedStatus(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/getConfigValue?category="download"&option="limit_speed"`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const limitSpeed = (await res.json()).toLowerCase() === 'true';
             if (callback) callback(limitSpeed);
+        } catch {
+            if (callback) callback(false);
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback(false);
     }
-    xhr.send();
 }
 
-function setLimitSpeedStatus(limitSpeed, callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const success = JSON.parse(xhr.responseText);
+export async function setLimitSpeedStatus(limitSpeed, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const success = await res.json();
             if (callback) callback(success);
+        } catch {
+            if (callback) callback(false);
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback(false);
     }
-    xhr.send();
 }
 
-function addPackage(name, url, callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/addPackage`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const response = JSON.parse(xhr.responseText);
-            if (response.hasOwnProperty('error')) {
+export async function addPackage(name, url, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
+    try {
+        const res = await fetch(`${origin}/api/addPackage`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            body: `name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const response = await res.json();
+            if (Object.hasOwn(response, 'error')) {
                 if (callback) callback(false, response.error);
             } else {
                 if (callback) callback(true);
             }
+        } catch {
+            if (callback) callback(false, 'Invalid server response');
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback(false, 'Invalid server response');
     }
-    const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
-    xhr.send(`name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`);
 }
 
-function checkURL(url, callback) {
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', `${origin}/api/checkURLs`, true);
-    xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            const response = JSON.parse(xhr.responseText);
-            if (callback) callback(!response.hasOwnProperty('BasePlugin') && !response.hasOwnProperty('error'));
+export function isLoggedIn(callback) {
+    getServerStatus(function(success, unauthorized, error, response) {
+        if (callback) callback(success, unauthorized, error, response);
+    });
+}
+
+export async function checkURL(url, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/checkURLs`, {
+            method: 'POST',
+            redirect: 'error',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getAuthHeaders() },
+            body: `urls=["${encodeURIComponent(url)}"]`,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const response = await res.json();
+            if (callback) callback(!Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error'));
+        } catch {
+            if (callback) callback(false);
         }
+    } catch {
+        clearTimeout(timeoutId);
+        if (callback) callback(false);
     }
-    xhr.send(`urls=["${encodeURIComponent(url)}"]`);
 }
