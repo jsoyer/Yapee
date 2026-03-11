@@ -19,6 +19,9 @@
       <button id="limitSpeedButton" class="btn" disabled>
         <i class="fa fa-infinity small"></i>
       </button>
+      <button id="proxyButton" class="btn" disabled>
+        <i class="fa fa-exchange-alt small"></i>
+      </button>
       <button id="externalLinkButton" class="btn">
         <i class="fa fa-external-link-alt small"></i>
       </button>
@@ -26,6 +29,11 @@
         <i class="fa fa-cog small"></i>
       </button>
     </div>
+  </div>
+
+  <div id="viewTabs" class="d-flex gap-1 mb-2" style="font-size: small" hidden>
+    <button id="downloadsTab" class="btn btn-sm btn-primary">Downloads</button>
+    <button id="collectorTab" class="btn btn-sm btn-outline-secondary">Collector</button>
   </div>
 
   <div id="captchaAlert" class="alert alert-warning py-2 small text-center mb-2" hidden>
@@ -38,6 +46,8 @@
       <div class="spinner-border text-primary m-3"></div>
     </div>
   </div>
+
+  <div id="collectorDiv" hidden></div>
 
   <div id="freeSpaceDiv" class="text-center text-muted small mt-1" hidden></div>
 

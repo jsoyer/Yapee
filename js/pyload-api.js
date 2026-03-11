@@ -278,3 +278,90 @@ export async function checkURL(url, callback) {
         if (callback) callback(false);
     }
 }
+
+export async function stopDownload(fid, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/stopDownloads?fids=[${fid}]`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (callback) callback(res.ok);
+    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+}
+
+export async function restartFile(fid, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/restartFile?fid=${fid}`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (callback) callback(res.ok);
+    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+}
+
+export async function deletePackage(pid, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/deletePackages?pids=[${pid}]`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (callback) callback(res.ok);
+    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+}
+
+export async function getCollectorData(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/getCollectorData`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try { if (callback) callback(await res.json()); } catch { if (callback) callback([]); }
+    } catch { clearTimeout(timeoutId); if (callback) callback([]); }
+}
+
+export async function pushToQueue(pid, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/pushToQueue?package=${pid}`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (callback) callback(res.ok);
+    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+}
+
+export async function getProxyStatus(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/getConfigValue?category="reconnect"&option="use_proxy"`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try {
+            const val = await res.json();
+            if (callback) callback(String(val).toLowerCase() === 'true');
+        } catch { if (callback) callback(false); }
+    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+}
+
+export async function toggleProxy(callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}/api/toggleProxy`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        try { if (callback) callback(!!(await res.json())); } catch { if (callback) callback(null); }
+    } catch { clearTimeout(timeoutId); if (callback) callback(null); }
+}
