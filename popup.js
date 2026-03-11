@@ -284,6 +284,17 @@ function switchTab(tab) {
     }
 }
 
+function setButtonLoading(btn, loading) {
+    if (loading) {
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = btn.dataset.originalHtml || '';
+        btn.disabled = false;
+    }
+}
+
 function setErrorMessage(message) {
     if (!message) { errorLabel.hidden = true; return; }
     errorLabel.innerText = message;
@@ -343,29 +354,29 @@ pauseButton.onclick = function() {
 };
 
 stopAllButton.onclick = function() {
-    stopAllButton.disabled = true;
+    setButtonLoading(stopAllButton, true);
     stopAllDownloads(function() {
         clearTimeout(statusPollTimeout);
         updateStatusDownloads(true);
-        stopAllButton.disabled = false;
+        setButtonLoading(stopAllButton, false);
     });
 };
 
 restartFailedButton.onclick = function() {
-    restartFailedButton.disabled = true;
+    setButtonLoading(restartFailedButton, true);
     restartFailed(function() {
         setSuccessMessage('Failed downloads restarted');
-        restartFailedButton.disabled = false;
+        setButtonLoading(restartFailedButton, false);
     });
 };
 
 deleteFinishedButton.onclick = function() {
-    deleteFinishedButton.disabled = true;
+    setButtonLoading(deleteFinishedButton, true);
     deleteFinished(function(success) {
         if (success) setSuccessMessage('Finished downloads cleared');
         clearTimeout(statusPollTimeout);
         updateStatusDownloads(true);
-        deleteFinishedButton.disabled = false;
+        setButtonLoading(deleteFinishedButton, false);
     });
 };
 
