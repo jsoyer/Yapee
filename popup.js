@@ -4,7 +4,7 @@ import {
     addPackage, checkURL, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads, isCaptchaWaiting,
     stopDownload, restartFile, deletePackage, getCollectorData, pushToQueue,
-    getProxyStatus, toggleProxy
+    getProxyStatus, toggleProxy, getServerVersion
 } from './js/pyload-api.js';
 
 let statusDiv = document.getElementById('status');
@@ -32,6 +32,7 @@ let viewTabs = document.getElementById('viewTabs');
 let downloadsTab = document.getElementById('downloadsTab');
 let collectorTab = document.getElementById('collectorTab');
 let collectorDiv = document.getElementById('collectorDiv');
+let serverVersionDiv = document.getElementById('serverVersionDiv');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
@@ -50,6 +51,7 @@ function updatePauseButton(paused) {
     isPaused = !!paused;
     pauseIcon.className = isPaused ? 'fa fa-play small' : 'fa fa-pause small';
     pauseButton.style.color = isPaused ? '#28a745' : '';
+    pauseButton.setAttribute('aria-label', isPaused ? 'Resume downloads' : 'Pause downloads');
     pauseButton.disabled = false;
 }
 
@@ -80,6 +82,14 @@ function updateFreeSpace() {
         if (bytes == null) return;
         freeSpaceDiv.textContent = `Free space: ${formatBytes(bytes)}`;
         freeSpaceDiv.hidden = false;
+    });
+}
+
+function updateServerVersion() {
+    getServerVersion(function(version) {
+        if (version == null) return;
+        serverVersionDiv.textContent = `PyLoad ${version}`;
+        serverVersionDiv.hidden = false;
     });
 }
 
@@ -378,6 +388,7 @@ pullStoredData(function() {
         updateLimitSpeedStatus();
         updateProxyStatus();
         updateFreeSpace();
+        updateServerVersion();
         viewTabs.hidden = false;
 
         chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {

@@ -48,7 +48,7 @@ async function decryptCredential(b64, key) {
 
 export function pullStoredData(callback) {
     chrome.storage.local.get(['serverIp', 'serverPort', 'serverPath', 'serverProtocol'], function(data) {
-        serverIp = data.serverIp || '172.0.0.1';
+        serverIp = data.serverIp || 'localhost';
         serverPort = data.serverPort || 8001;
         serverPath = data.serverPath || '/';
         serverProtocol = data.serverProtocol || 'https';

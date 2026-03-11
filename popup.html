@@ -13,19 +13,19 @@
     <div class="font-weight-bold">Current Downloads</div>
     <div id="totalSpeed" class="font-weight-bold" style="margin-left: 4px"></div>
     <div class="ms-auto">
-      <button id="pauseButton" class="btn" disabled>
+      <button id="pauseButton" class="btn" disabled aria-label="Pause downloads">
         <i id="pauseIcon" class="fa fa-pause small"></i>
       </button>
-      <button id="limitSpeedButton" class="btn" disabled>
+      <button id="limitSpeedButton" class="btn" disabled aria-label="Toggle speed limit">
         <i class="fa fa-infinity small"></i>
       </button>
-      <button id="proxyButton" class="btn" disabled>
+      <button id="proxyButton" class="btn" disabled aria-label="Toggle proxy">
         <i class="fa fa-exchange-alt small"></i>
       </button>
-      <button id="externalLinkButton" class="btn">
+      <button id="externalLinkButton" class="btn" aria-label="Open PyLoad">
         <i class="fa fa-external-link-alt small"></i>
       </button>
-      <button id="optionsButton" class="btn">
+      <button id="optionsButton" class="btn" aria-label="Settings">
         <i class="fa fa-cog small"></i>
       </button>
     </div>
@@ -50,6 +50,7 @@
   <div id="collectorDiv" hidden></div>
 
   <div id="freeSpaceDiv" class="text-center text-muted small mt-1" hidden></div>
+  <div id="serverVersionDiv" class="text-center text-muted small" hidden></div>
 
   <div id="actionButtons" class="d-flex justify-content-center gap-2 mt-2" hidden>
     <button id="stopAllButton" class="btn btn-sm btn-outline-danger">

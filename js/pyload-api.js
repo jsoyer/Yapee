@@ -9,6 +9,21 @@ export function abortServerStatus() {
     }
 }
 
+async function apiFetch(path, onSuccess, onError) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    try {
+        const res = await fetch(`${origin}${path}`, {
+            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        await onSuccess(res);
+    } catch {
+        clearTimeout(timeoutId);
+        if (onError) onError();
+    }
+}
+
 export async function getServerStatus(callback) {
     serverStatusController = new AbortController();
     const timeoutId = setTimeout(() => serverStatusController.abort(), 5000);
@@ -53,201 +68,95 @@ export function login(u, p, remember, callback) {
 }
 
 export async function getStatusDownloads(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/statusDownloads`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
-            const status = await res.json();
-            if (callback) callback(status);
-        } catch {
-            if (callback) callback([]);
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback([]);
-    }
+    apiFetch('/api/statusDownloads',
+        async res => { callback(await res.json()); },
+        () => callback([])
+    );
 }
 
 export async function getQueueData(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/getQueueData`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
+    apiFetch('/api/getQueueData',
+        async res => {
             const queueData = await res.json();
             const urls = [];
             queueData.forEach(pack => {
-                pack.links.forEach(link => {
-                    urls.push(link.url);
-                });
+                pack.links.forEach(link => { urls.push(link.url); });
             });
-            if (callback) callback(urls);
-        } catch {
-            if (callback) callback([]);
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback([]);
-    }
+            callback(urls);
+        },
+        () => callback([])
+    );
 }
 
 export async function getLimitSpeedStatus(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/getConfigValue?category="download"&option="limit_speed"`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
-            const limitSpeed = (await res.json()).toLowerCase() === 'true';
-            if (callback) callback(limitSpeed);
-        } catch {
-            if (callback) callback(false);
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback(false);
-    }
+    apiFetch('/api/getConfigValue?category="download"&option="limit_speed"',
+        async res => { callback((await res.json()).toLowerCase() === 'true'); },
+        () => callback(false)
+    );
 }
 
 export async function setLimitSpeedStatus(limitSpeed, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
-            const success = await res.json();
-            if (callback) callback(success);
-        } catch {
-            if (callback) callback(false);
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback(false);
-    }
+    apiFetch(`/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`,
+        async res => { callback(await res.json()); },
+        () => callback(false)
+    );
 }
 
 export async function addPackage(name, url, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
-    try {
-        const res = await fetch(`${origin}/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
+    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`,
+        async res => {
             const response = await res.json();
             if (Object.hasOwn(response, 'error')) {
-                if (callback) callback(false, response.error);
+                callback(false, response.error);
             } else {
-                if (callback) callback(true);
+                callback(true);
             }
-        } catch {
-            if (callback) callback(false, 'Invalid server response');
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback(false, 'Invalid server response');
-    }
+        },
+        () => callback(false, 'Invalid server response')
+    );
 }
 
 export async function togglePause(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/togglePause`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(await res.json()); } catch { if (callback) callback(null); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(null); }
+    apiFetch('/api/togglePause',
+        async res => { callback(await res.json()); },
+        () => callback(null)
+    );
 }
 
 export async function freeSpace(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/freeSpace`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(await res.json()); } catch { if (callback) callback(null); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(null); }
+    apiFetch('/api/freeSpace',
+        async res => { callback(await res.json()); },
+        () => callback(null)
+    );
 }
 
 export async function deleteFinished(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/deleteFinished`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(true, await res.json()); } catch { if (callback) callback(false); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch('/api/deleteFinished',
+        async res => { callback(true, await res.json()); },
+        () => callback(false)
+    );
 }
 
 export async function restartFailed(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/restartFailed`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch('/api/restartFailed',
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function stopAllDownloads(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/stopAllDownloads`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch('/api/stopAllDownloads',
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function isCaptchaWaiting(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/isCaptchaWaiting`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(!!(await res.json())); } catch { if (callback) callback(false); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch('/api/isCaptchaWaiting',
+        async res => { callback(!!(await res.json())); },
+        () => callback(false)
+    );
 }
 
 export function isLoggedIn(callback) {
@@ -257,111 +166,70 @@ export function isLoggedIn(callback) {
 }
 
 export async function checkURL(url, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(url)}"]`, {
-            method: 'GET',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
+    apiFetch(`/api/checkURLs?urls=["${encodeURIComponent(url)}"]`,
+        async res => {
             const response = await res.json();
-            if (callback) callback(!Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error'));
-        } catch {
-            if (callback) callback(false);
-        }
-    } catch {
-        clearTimeout(timeoutId);
-        if (callback) callback(false);
-    }
+            callback(!Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error'));
+        },
+        () => callback(false)
+    );
 }
 
 export async function stopDownload(fid, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/stopDownloads?fids=[${fid}]`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch(`/api/stopDownloads?fids=[${fid}]`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function restartFile(fid, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/restartFile?fid=${fid}`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch(`/api/restartFile?fid=${fid}`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function deletePackage(pid, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/deletePackages?pids=[${pid}]`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch(`/api/deletePackages?pids=[${pid}]`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function getCollectorData(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/getCollectorData`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(await res.json()); } catch { if (callback) callback([]); }
-    } catch { clearTimeout(timeoutId); if (callback) callback([]); }
+    apiFetch('/api/getCollectorData',
+        async res => { callback(await res.json()); },
+        () => callback([])
+    );
 }
 
 export async function pushToQueue(pid, callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/pushToQueue?package=${pid}`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        if (callback) callback(res.ok);
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+    apiFetch(`/api/pushToQueue?package=${pid}`,
+        res => callback(res.ok),
+        () => callback(false)
+    );
 }
 
 export async function getProxyStatus(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/getConfigValue?category="reconnect"&option="use_proxy"`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try {
+    apiFetch('/api/getConfigValue?category="reconnect"&option="use_proxy"',
+        async res => {
             const val = await res.json();
-            if (callback) callback(String(val).toLowerCase() === 'true');
-        } catch { if (callback) callback(false); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(false); }
+            callback(String(val).toLowerCase() === 'true');
+        },
+        () => callback(false)
+    );
 }
 
 export async function toggleProxy(callback) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const res = await fetch(`${origin}/api/toggleProxy`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        try { if (callback) callback(!!(await res.json())); } catch { if (callback) callback(null); }
-    } catch { clearTimeout(timeoutId); if (callback) callback(null); }
+    apiFetch('/api/toggleProxy',
+        async res => { callback(!!(await res.json())); },
+        () => callback(null)
+    );
+}
+
+export async function getServerVersion(callback) {
+    apiFetch('/api/getServerVersion',
+        async res => { callback(await res.json()); },
+        () => callback(null)
+    );
 }
