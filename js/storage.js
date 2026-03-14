@@ -58,8 +58,8 @@ function applyActiveServer() {
         origin = buildOrigin(serverProtocol, serverIp, serverPort, serverPath);
     } else {
         serverIp = 'localhost';
-        serverPort = 8001;
-        serverProtocol = 'https';
+        serverPort = 8000;
+        serverProtocol = 'http';
         serverPath = '/';
         origin = buildOrigin(serverProtocol, serverIp, serverPort, serverPath);
     }
@@ -72,7 +72,7 @@ export function pullStoredData(callback) {
             activeServerId = data.activeServerId || servers[0].id;
         } else if (data.serverIp) {
             const id = crypto.randomUUID();
-            servers = [{ id, name: 'Default', serverIp: data.serverIp, serverPort: data.serverPort || 8001, serverProtocol: data.serverProtocol || 'https', serverPath: data.serverPath || '/' }];
+            servers = [{ id, name: 'Default', serverIp: data.serverIp, serverPort: data.serverPort || 8000, serverProtocol: data.serverProtocol || 'http', serverPath: data.serverPath || '/' }];
             activeServerId = id;
             chrome.storage.local.set({ servers, activeServerId });
         } else {
@@ -162,8 +162,8 @@ export function addServer(config, callback) {
         id,
         name: config.name || 'New server',
         serverIp: config.serverIp || 'localhost',
-        serverPort: config.serverPort || 8001,
-        serverProtocol: config.serverProtocol || 'https',
+        serverPort: config.serverPort || 8000,
+        serverProtocol: config.serverProtocol || 'http',
         serverPath: config.serverPath || '/'
     };
     servers.push(server);

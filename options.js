@@ -276,7 +276,7 @@ function renderServerList() {
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
         deleteBtn.textContent = msg('optionsDelete');
-        deleteBtn.disabled = servers.length <= 1;
+        deleteBtn.disabled = false;
         deleteBtn.onclick = function() {
             if (!confirm(msg('optionsConfirmDeleteServer'))) return;
             removeServer(s.id, function() {
@@ -306,7 +306,14 @@ function updateForm() {
 }
 
 addServerButton.onclick = function() {
-    addServer({ name: msg('optionsNewServer') }, function(s) {
+    const config = {
+        name: serverNameInput.value.trim() || msg('optionsNewServer'),
+        serverIp: serverIpInput.value.trim() || 'localhost',
+        serverPort: parseInt(serverPortInput.value, 10) || 8000,
+        serverProtocol: getProtocol(),
+        serverPath: serverPathInput.value || '/'
+    };
+    addServer(config, function(s) {
         setActiveServer(s.id, function() {
             pullStoredData(function() {
                 renderServerList();
