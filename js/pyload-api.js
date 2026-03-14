@@ -306,12 +306,14 @@ export async function uploadContainer(file, callback) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-        const formData = new FormData();
-        formData.append('file', file, file.name);
+        const content = await file.text();
+        const params = new URLSearchParams();
+        params.set('filename', file.name);
+        params.set('data', content);
         const res = await fetch(`${origin}/api/uploadContainer`, {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: formData,
+            headers: { ...getAuthHeaders(), 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
             signal: controller.signal,
             credentials: 'omit'
         });
