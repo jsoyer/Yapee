@@ -61,8 +61,12 @@
     "description": "Multi-URL textarea placeholder"
   },
   "popupAddAll": {
-    "message": "Add all",
+    "message": "Add to queue",
     "description": "Multi-URL submit button"
+  },
+  "popupPushAllToQueue": {
+    "message": "Push all to queue",
+    "description": "Collector push-all button"
   },
   "popupPageDownload": {
     "message": "Page Download",

@@ -46,7 +46,10 @@
     "message": "Une URL par ligne"
   },
   "popupAddAll": {
-    "message": "Tout ajouter"
+    "message": "Ajouter en queue"
+  },
+  "popupPushAllToQueue": {
+    "message": "Tout mettre en queue"
   },
   "popupPageDownload": {
     "message": "T\u00e9l\u00e9chargement de page"
