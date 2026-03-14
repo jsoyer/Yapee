@@ -178,7 +178,7 @@ export async function checkURL(url, callback) {
 }
 
 export async function stopDownload(fid, callback) {
-    apiFetch(`/api/stopDownloads?fids=[${fid}]`,
+    apiFetch(`/api/stopDownloads?file_ids=[${fid}]`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -186,14 +186,14 @@ export async function stopDownload(fid, callback) {
 }
 
 export async function restartFile(fid, callback) {
-    apiFetch(`/api/restartFile?fid=${fid}`,
+    apiFetch(`/api/restartFile?file_id=${fid}`,
         res => callback(res.ok),
         () => callback(false)
     );
 }
 
 export async function deletePackage(pid, callback) {
-    apiFetch(`/api/deletePackages?pids=[${pid}]`,
+    apiFetch(`/api/deletePackages?package_ids=[${pid}]`,
         res => callback(res.ok),
         () => callback(false),
         'POST'
@@ -208,7 +208,7 @@ export async function getCollectorData(callback) {
 }
 
 export async function pushToQueue(pid, callback) {
-    apiFetch(`/api/pushToQueue?package=${pid}`,
+    apiFetch(`/api/pushToQueue?package_id=${pid}`,
         res => callback(res.ok),
         () => callback(false)
     );
@@ -253,7 +253,7 @@ export async function getQueuePackages(callback) {
 }
 
 export async function orderPackage(pid, position, callback) {
-    apiFetch(`/api/orderPackage?pid=${pid}&position=${position}`,
+    apiFetch(`/api/orderPackage?package_id=${pid}&position=${position}`,
         res => callback(res.ok),
         () => callback(false)
     );
