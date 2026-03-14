@@ -11,6 +11,16 @@ import {
 } from './js/pyload-api.js';
 import { applyI18n, msg } from './js/i18n.js';
 
+function nameFromUrl(url) {
+    try {
+        const pathname = new URL(url).pathname;
+        const segment = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
+        const name = segment.replace(/\.[^.]+$/, '');
+        if (name.length > 2) return name;
+    } catch {}
+    return url.split('/').pop() || url;
+}
+
 applyI18n();
 
 let statusDiv = document.getElementById('status');
@@ -458,6 +468,24 @@ function updateCollectorView() {
             row.appendChild(delBtn);
             collectorDiv.appendChild(row);
         });
+
+        const btnRow = document.createElement('div');
+        btnRow.className = 'd-flex justify-content-center gap-2 mt-2';
+        const pushAllBtn = document.createElement('button');
+        pushAllBtn.className = 'btn btn-sm btn-primary';
+        pushAllBtn.textContent = msg('popupPushAllToQueue');
+        pushAllBtn.onclick = function() {
+            pushAllBtn.disabled = true;
+            let done = 0;
+            filtered.forEach(function(pkg) {
+                pushToQueue(pkg.pid, function() {
+                    done++;
+                    if (done === filtered.length) switchTab('downloads');
+                });
+            });
+        };
+        btnRow.appendChild(pushAllBtn);
+        collectorDiv.appendChild(btnRow);
     });
 }
 
@@ -617,7 +645,7 @@ multiUrlButton.onclick = function() {
     let done = 0;
     let errors = 0;
     lines.forEach(function(url) {
-        const name = url.split('/').pop() || url;
+        const name = nameFromUrl(url);
         addPackage(name, url, function(success) {
             done++;
             if (!success) errors++;

@@ -1,6 +1,16 @@
 import { pullStoredData, origin, getAuthHeaders, incrementStat } from './js/storage.js';
 import { addPackage, getStatusDownloads } from './js/pyload-api.js';
 
+function nameFromUrl(url) {
+    try {
+        const pathname = new URL(url).pathname;
+        const segment = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
+        const name = segment.replace(/\.[^.]+$/, '');
+        if (name.length > 2) return name;
+    } catch {}
+    return url.split('/').pop() || url;
+}
+
 const notify = function(title, message) {
     return chrome.notifications.create('', {
         type: 'basic',
@@ -33,9 +43,9 @@ async function downloadLink(info, tab) {
             notify('Yape', chrome.i18n.getMessage('bgCheckUrlError', [checkJson.error || 'unknown error']));
             return;
         }
-        const safeName = encodeURIComponent(info.linkUrl.replace(/[^a-z0-9._\-]/gi, '_'));
-        const addRes = await fetch(`${origin}/api/addPackage?name="${safeName}"&links=["${encodeURIComponent(info.linkUrl)}"]`, {
-            method: 'GET',
+        const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
+        const addRes = await fetch(`${origin}/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(info.linkUrl)}"]`, {
+            method: 'POST',
             redirect: 'error',
             headers: { ...getAuthHeaders() },
             credentials: 'omit'
