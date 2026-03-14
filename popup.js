@@ -172,10 +172,8 @@ function startEventLoop() {
             e.destination === 'collector'
         );
 
-        if (hasQueueEvent) {
-            if (activeView === 'downloads') updateStatusDownloads();
-            else if (activeView === 'queue') updateQueueView();
-        }
+        if (activeView === 'downloads') updateStatusDownloads();
+        else if (activeView === 'queue' && hasQueueEvent) updateQueueView();
         if (hasCollectorEvent && activeView === 'collector') {
             updateCollectorView();
         }
