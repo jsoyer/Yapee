@@ -1,3 +1,23 @@
+# IDEs
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
 
+# Build artifacts
 *.zip
+*.crx
+*.xpi
+*.pem
+web-ext-artifacts/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node (if ever used for tooling)
+node_modules/
+
+# Claude Code
+.claude/

@@ -60,13 +60,6 @@ chrome.runtime.onInstalled.addListener( () => {
     chrome.alarms.create('checkDownloads', { periodInMinutes: 0.5 });
 });
 
-chrome.runtime.onMessage.addListener((data, sender) => {
-    if (sender.id !== chrome.runtime.id) return;
-    if (data.type === 'notification') {
-        notify(data.title, data.message);
-    }
-});
-
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if ('yape' !== info.menuItemId) return;
     pullStoredData(() => {
@@ -86,6 +79,11 @@ function handleAddPackage(msg, sendResponse) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (sender.id !== chrome.runtime.id) return false;
+    if (msg.type === 'notification') {
+        notify(msg.title, msg.message);
+        return false;
+    }
     return handleAddPackage(msg, sendResponse);
 });
 

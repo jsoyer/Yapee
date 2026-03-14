@@ -1,10 +1,70 @@
 // ==UserScript==
 // @name         Yape — Send to PyLoad
 // @namespace    https://github.com/jsoyer/Yape
-// @version      1.1.0
+// @version      1.2.0
 // @description  Adds a "↓ PyLoad" button next to download links on supported hosters
 // @author       jsoyer
-// @match        *://*/*
+// @match        *://*.1fichier.com/*
+// @match        *://*.4shared.com/*
+// @match        *://*.alfafile.net/*
+// @match        *://*.alldebrid.com/*
+// @match        *://*.alterupload.com/*
+// @match        *://*.clicknupload.com/*
+// @match        *://cloud.mail.ru/*
+// @match        *://*.debrid.it/*
+// @match        *://*.debrid.link/*
+// @match        *://*.depositfiles.com/*
+// @match        *://*.dfiles.eu/*
+// @match        *://*.dfiles.ru/*
+// @match        *://*.dl4free.com/*
+// @match        *://*.dropbox.com/*
+// @match        *://drive.google.com/*
+// @match        *://docs.google.com/*
+// @match        *://*.easyupload.io/*
+// @match        *://*.fboom.me/*
+// @match        *://*.fileboom.me/*
+// @match        *://*.filecloud.io/*
+// @match        *://*.filefactory.com/*
+// @match        *://*.filejoker.net/*
+// @match        *://*.fileom.com/*
+// @match        *://*.filerio.in/*
+// @match        *://*.fshare.vn/*
+// @match        *://*.gofile.io/*
+// @match        *://*.k2s.cc/*
+// @match        *://*.keep2share.cc/*
+// @match        *://*.krakenfiles.com/*
+// @match        *://*.linksnappy.com/*
+// @match        *://*.mega.nz/*
+// @match        *://*.mega.co.nz/*
+// @match        *://*.mediafire.com/*
+// @match        *://*.mp4upload.com/*
+// @match        *://*.nitro.download/*
+// @match        *://*.nitroflare.com/*
+// @match        *://*.novafile.com/*
+// @match        *://*.pixeldrain.com/*
+// @match        *://*.premiumize.me/*
+// @match        *://*.rapidgator.net/*
+// @match        *://*.rg.to/*
+// @match        *://*.real-debrid.com/*
+// @match        *://*.sendspace.com/*
+// @match        *://*.solidfiles.com/*
+// @match        *://*.soundcloud.com/*
+// @match        *://*.turbobit.net/*
+// @match        *://*.tusfiles.com/*
+// @match        *://*.uloz.to/*
+// @match        *://*.ulozto.cz/*
+// @match        *://*.ulozto.sk/*
+// @match        *://*.uploadgig.com/*
+// @match        *://*.upstore.net/*
+// @match        *://*.uptobox.com/*
+// @match        *://*.uptostream.com/*
+// @match        *://*.userscloud.com/*
+// @match        *://*.vimeo.com/*
+// @match        *://*.vk.com/*
+// @match        *://*.webshare.cz/*
+// @match        *://*.wetransfer.com/*
+// @match        *://*.youtube.com/*
+// @match        *://youtu.be/*
 // @grant        none
 // @run-at       document-idle
 // ==/UserScript==
@@ -186,9 +246,14 @@
 
     scanLinks();
 
+    let scanTimer = null;
     new MutationObserver(function (mutations) {
         for (const m of mutations) {
-            if (m.addedNodes.length) { scanLinks(); return; }
+            if (m.addedNodes.length) {
+                if (scanTimer) clearTimeout(scanTimer);
+                scanTimer = setTimeout(scanLinks, 200);
+                return;
+            }
         }
     }).observe(document.body, { childList: true, subtree: true });
 
