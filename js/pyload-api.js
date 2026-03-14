@@ -14,7 +14,7 @@ async function apiFetch(path, onSuccess, onError, method = 'GET') {
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}${path}`, {
-            method, redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+            method, redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal, credentials: 'omit'
         });
         clearTimeout(timeoutId);
         await onSuccess(res);
@@ -32,7 +32,8 @@ export async function getServerStatus(callback) {
             method: 'GET',
             redirect: 'error',
             headers: { ...getAuthHeaders() },
-            signal: serverStatusController.signal
+            signal: serverStatusController.signal,
+            credentials: 'omit'
         });
         clearTimeout(timeoutId);
         serverStatusController = null;
@@ -306,12 +307,13 @@ export async function uploadContainer(file, callback) {
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', file, file.name);
         const res = await fetch(`${origin}/api/uploadContainer`, {
             method: 'POST',
-            headers: { ...getAuthHeaders() },
+            headers: getAuthHeaders(),
             body: formData,
-            signal: controller.signal
+            signal: controller.signal,
+            credentials: 'omit'
         });
         clearTimeout(timeoutId);
         if (res.ok) {

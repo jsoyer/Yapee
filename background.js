@@ -14,7 +14,7 @@ async function downloadLink(info, tab) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-        const statusRes = await fetch(`${origin}/api/statusServer`, { method: 'GET', redirect: 'error', signal: controller.signal, headers: { ...getAuthHeaders() } });
+        const statusRes = await fetch(`${origin}/api/statusServer`, { method: 'GET', redirect: 'error', signal: controller.signal, headers: { ...getAuthHeaders() }, credentials: 'omit' });
         const statusJson = await statusRes.json();
         clearTimeout(timeoutId);
         if (Object.hasOwn(statusJson, 'error')) {
@@ -25,7 +25,8 @@ async function downloadLink(info, tab) {
         const checkRes = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(info.linkUrl)}"]`, {
             method: 'POST',
             redirect: 'error',
-            headers: { ...getAuthHeaders() }
+            headers: { ...getAuthHeaders() },
+            credentials: 'omit'
         });
         const checkJson = await checkRes.json();
         if (Object.hasOwn(checkJson, 'error')) {
@@ -36,7 +37,8 @@ async function downloadLink(info, tab) {
         const addRes = await fetch(`${origin}/api/addPackage?name="${safeName}"&links=["${encodeURIComponent(info.linkUrl)}"]`, {
             method: 'GET',
             redirect: 'error',
-            headers: { ...getAuthHeaders() }
+            headers: { ...getAuthHeaders() },
+            credentials: 'omit'
         });
         const addJson = await addRes.json();
         if (Object.hasOwn(addJson, 'error')) {
