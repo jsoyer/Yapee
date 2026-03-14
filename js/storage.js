@@ -150,8 +150,13 @@ export function setOrigin(ip, port, protocol, path, name, callback) {
         if (idx !== -1) {
             servers[idx] = { ...servers[idx], serverIp: ip, serverPort: port, serverProtocol: protocol, serverPath: path, name: name || servers[idx].name };
         }
+    } else {
+        const id = crypto.randomUUID();
+        const server = { id, name: name || 'Default', serverIp: ip, serverPort: port, serverProtocol: protocol, serverPath: path };
+        servers.push(server);
+        activeServerId = id;
     }
-    chrome.storage.local.set({ servers }, function() {
+    chrome.storage.local.set({ servers, activeServerId }, function() {
         if (callback) callback();
     });
 }
