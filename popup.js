@@ -715,7 +715,7 @@ pullStoredData(function() {
 
         chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
             const url = tabs[0].url;
-            const name = tabs[0].title;
+            const name = tabs[0].title || '';
             downloadLabel.innerText = name;
             checkURL(url, function(success) {
                 if (!success) return;
