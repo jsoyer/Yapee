@@ -300,3 +300,28 @@ export async function getLog(offset, callback) {
         () => callback([])
     );
 }
+
+export async function uploadContainer(file, callback) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(`${origin}/api/uploadContainer`, {
+            method: 'POST',
+            headers: { ...getAuthHeaders() },
+            body: formData,
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+            callback(true);
+        } else {
+            const text = await res.text().catch(() => 'Server error');
+            callback(false, text);
+        }
+    } catch {
+        clearTimeout(timeoutId);
+        callback(false, 'Upload failed');
+    }
+}

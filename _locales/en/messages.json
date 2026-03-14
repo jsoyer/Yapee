@@ -410,6 +410,63 @@
     "description": "Empty log output"
   },
 
+  "popupUploadContainer": {
+    "message": "Upload Container",
+    "description": "Container upload section label"
+  },
+  "popupUploadContainerHelp": {
+    "message": "Upload a .dlc, .ccf or .rsdf file",
+    "description": "Container upload help text"
+  },
+  "popupUploadButton": {
+    "message": "Upload",
+    "description": "Container upload button"
+  },
+  "popupUploadSuccess": {
+    "message": "Container uploaded",
+    "description": "Container upload success message"
+  },
+  "popupUploadError": {
+    "message": "Upload failed: $1",
+    "description": "Container upload error message",
+    "placeholders": {
+      "1": { "content": "$1", "example": "Server error" }
+    }
+  },
+  "popupInvalidFileType": {
+    "message": "Invalid file type. Accepted: .dlc, .ccf, .rsdf",
+    "description": "Container file type validation error"
+  },
+
+  "optionsLoading": {
+    "message": "Loading...",
+    "description": "Generic loading text"
+  },
+  "optionsDelete": {
+    "message": "Delete",
+    "description": "Delete button text"
+  },
+  "optionsTabAccounts": {
+    "message": "Accounts",
+    "description": "Options tab label"
+  },
+  "optionsTabLogs": {
+    "message": "Logs",
+    "description": "Options tab label"
+  },
+  "optionsConfirmDeleteServer": {
+    "message": "Delete this server?",
+    "description": "Server delete confirmation"
+  },
+  "optionsConfirmDeleteAccount": {
+    "message": "Remove this account?",
+    "description": "Account delete confirmation"
+  },
+  "ariaClose": {
+    "message": "Close",
+    "description": "Close button aria-label"
+  },
+
   "bgDownloadsComplete": {
     "message": "All downloads complete",
     "description": "Background notification when all downloads finish"

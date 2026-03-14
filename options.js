@@ -46,7 +46,7 @@ function saveLoginRateLimit() {
 function enableSpinner() {
     spinnerDiv.innerHTML = `
         <div class="spinner-border text-primary m-3"></div>
-        <div>Checking status...</div>
+        <div>${msg('optionsCheckingStatus')}</div>
     `;
 }
 
@@ -275,9 +275,10 @@ function renderServerList() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-        deleteBtn.textContent = 'Delete';
+        deleteBtn.textContent = msg('optionsDelete');
         deleteBtn.disabled = servers.length <= 1;
         deleteBtn.onclick = function() {
+            if (!confirm(msg('optionsConfirmDeleteServer'))) return;
             removeServer(s.id, function() {
                 pullStoredData(function() {
                     renderServerList();
@@ -355,6 +356,7 @@ function renderAccounts(accounts) {
         removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
         removeBtn.textContent = msg('optionsRemove');
         removeBtn.onclick = function() {
+            if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
             removeBtn.disabled = true;
             removeAccount(acc.plugin, acc.login, function() { loadAccounts(); });
         };
@@ -367,7 +369,11 @@ function renderAccounts(accounts) {
 }
 
 function loadAccounts() {
-    accountsDiv.innerHTML = '<div class="text-muted text-center">Loading…</div>';
+    accountsDiv.textContent = '';
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'text-muted text-center';
+    loadingDiv.textContent = msg('optionsLoading');
+    accountsDiv.appendChild(loadingDiv);
     getAccounts(function(accounts) { renderAccounts(accounts); });
 }
 
@@ -432,5 +438,12 @@ pullStoredData(function() {
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+    });
+
+    document.getElementById('username').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
+    });
+    document.getElementById('password').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
     });
 });

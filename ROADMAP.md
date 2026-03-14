@@ -14,6 +14,7 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 - **v2.7.0** — Tampermonkey companion script (`yape-companion.user.js`), `externally_connectable` for 60+ hosters, `onMessageExternal` in background.js
 - **v2.8.0** — Multi-server switcher (Option A): servers array in storage, active server selector in popup, server management in options page, automatic migration from single-server format
 - **v3.0.0** — Per-server credentials, dark mode (auto), notification on download complete, search/filter in popup, drag & drop reorder in queue, download stats counter, Firefox port (`manifest.firefox.json`), i18n FR/EN modular (`_locales/`, `js/i18n.js`)
+- **v3.1.0** — DLC/CCF/RSDF container upload, options page redesign (tabbed layout), content-relay for companion script (no more EXTENSION_ID), checkURLs POST fix, search debounce, accessibility (aria-labels), i18n completeness, Firefox content-relay, SECURITY.md, fork independence (README rewrite, LICENSE update)
 
 ---
 
@@ -26,5 +27,4 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 ## Won't Do
 
 - **Full config editor** — Users edit `pyload.cfg` directly; not worth the complexity.
-- **Container file upload (.dlc / .ccf)** — Niche feature; file picker + binary handling, rare use case.
 - **Download scheduler** — Time-window config for downloads; complex UI, covered by PyLoad's own web UI.

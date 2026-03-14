@@ -6,7 +6,8 @@ import {
     stopDownload, restartFile, deletePackage, getCollectorData, pushToQueue,
     getProxyStatus, toggleProxy, getServerVersion,
     getEvents, getQueuePackages, orderPackage,
-    getCaptchaTask, setCaptchaResult
+    getCaptchaTask, setCaptchaResult,
+    uploadContainer
 } from './js/pyload-api.js';
 import { applyI18n, msg } from './js/i18n.js';
 
@@ -35,6 +36,9 @@ let captchaSubmit = document.getElementById('captchaSubmit');
 let multiUrlDiv = document.getElementById('multiUrlDiv');
 let multiUrlInput = document.getElementById('multiUrlInput');
 let multiUrlButton = document.getElementById('multiUrlButton');
+let containerUploadDiv = document.getElementById('containerUploadDiv');
+let containerFileInput = document.getElementById('containerFileInput');
+let containerUploadButton = document.getElementById('containerUploadButton');
 let freeSpaceDiv = document.getElementById('freeSpaceDiv');
 let actionButtons = document.getElementById('actionButtons');
 let stopAllButton = document.getElementById('stopAllButton');
@@ -137,11 +141,15 @@ function updateStats() {
 
 // --- Search ---
 
+let searchDebounceTimer = null;
 searchInput.oninput = function() {
-    searchTerm = searchInput.value.toLowerCase();
-    if (activeView === 'downloads') updateStatusDownloads();
-    else if (activeView === 'queue') updateQueueView();
-    else updateCollectorView();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function() {
+        searchTerm = searchInput.value.toLowerCase();
+        if (activeView === 'downloads') updateStatusDownloads();
+        else if (activeView === 'queue') updateQueueView();
+        else updateCollectorView();
+    }, 300);
 };
 
 // --- Event-driven polling ---
@@ -202,6 +210,7 @@ function buildDownloadItem(download) {
     const stopBtn = document.createElement('button');
     stopBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     stopBtn.title = msg('ariaStop');
+    stopBtn.setAttribute('aria-label', msg('ariaStop'));
     stopBtn.innerHTML = '<i class="fa fa-stop"></i>';
     stopBtn.onclick = function() {
         stopBtn.disabled = true;
@@ -211,6 +220,7 @@ function buildDownloadItem(download) {
     const restartBtn = document.createElement('button');
     restartBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     restartBtn.title = msg('ariaRestart');
+    restartBtn.setAttribute('aria-label', msg('ariaRestart'));
     restartBtn.innerHTML = '<i class="fa fa-redo"></i>';
     restartBtn.onclick = function() {
         restartBtn.disabled = true;
@@ -220,6 +230,7 @@ function buildDownloadItem(download) {
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     delBtn.title = msg('ariaDeletePackage');
+    delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
     delBtn.innerHTML = '<i class="fa fa-trash"></i>';
     delBtn.onclick = function() {
         delBtn.disabled = true;
@@ -331,6 +342,7 @@ function buildQueueItem(pkg, index, total) {
     const upBtn = document.createElement('button');
     upBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     upBtn.title = msg('ariaMoveUp');
+    upBtn.setAttribute('aria-label', msg('ariaMoveUp'));
     upBtn.innerHTML = '<i class="fa fa-arrow-up"></i>';
     upBtn.disabled = index === 0;
     upBtn.onclick = function() {
@@ -341,6 +353,7 @@ function buildQueueItem(pkg, index, total) {
     const downBtn = document.createElement('button');
     downBtn.className = 'btn btn-sm btn-outline-secondary py-0 px-1';
     downBtn.title = msg('ariaMoveDown');
+    downBtn.setAttribute('aria-label', msg('ariaMoveDown'));
     downBtn.innerHTML = '<i class="fa fa-arrow-down"></i>';
     downBtn.disabled = index === total - 1;
     downBtn.onclick = function() {
@@ -351,6 +364,7 @@ function buildQueueItem(pkg, index, total) {
     const delBtn = document.createElement('button');
     delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
     delBtn.title = msg('ariaDeletePackage');
+    delBtn.setAttribute('aria-label', msg('ariaDeletePackage'));
     delBtn.innerHTML = '<i class="fa fa-trash"></i>';
     delBtn.onclick = function() {
         delBtn.disabled = true;
@@ -423,6 +437,7 @@ function updateCollectorView() {
             const queueBtn = document.createElement('button');
             queueBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
             queueBtn.title = msg('ariaAddToQueue');
+            queueBtn.setAttribute('aria-label', msg('ariaAddToQueue'));
             queueBtn.innerHTML = '<i class="fa fa-play"></i>';
             queueBtn.onclick = function() {
                 queueBtn.disabled = true;
@@ -432,6 +447,7 @@ function updateCollectorView() {
             const delBtn = document.createElement('button');
             delBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
             delBtn.title = msg('ariaDelete');
+            delBtn.setAttribute('aria-label', msg('ariaDelete'));
             delBtn.innerHTML = '<i class="fa fa-trash"></i>';
             delBtn.onclick = function() {
                 delBtn.disabled = true;
@@ -621,6 +637,29 @@ multiUrlButton.onclick = function() {
     });
 };
 
+containerUploadButton.onclick = function() {
+    const file = containerFileInput.files[0];
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['dlc', 'ccf', 'rsdf'].includes(ext)) {
+        setErrorMessage(msg('popupInvalidFileType'));
+        return;
+    }
+    setButtonLoading(containerUploadButton, true);
+    uploadContainer(file, function(success, error) {
+        setButtonLoading(containerUploadButton, false);
+        if (success) {
+            containerFileInput.value = '';
+            incrementStat('packagesAdded');
+            setSuccessMessage(msg('popupUploadSuccess'));
+            updateStatusDownloads();
+            updateStats();
+        } else {
+            setErrorMessage(msg('popupUploadError', [error || 'Unknown error']));
+        }
+    });
+};
+
 // --- Init ---
 
 pullStoredData(function() {
@@ -645,6 +684,7 @@ pullStoredData(function() {
         updateStats();
         viewTabs.hidden = false;
         multiUrlDiv.hidden = false;
+        containerUploadDiv.hidden = false;
         searchInput.hidden = false;
 
         if (servers.length > 1) {

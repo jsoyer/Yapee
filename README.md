@@ -1,119 +1,154 @@
-# Yape — Browser Extension for PyLoad
+# Yape — PyLoad Browser Extension
 
-> Fork of [RemiRigal/Yape](https://github.com/RemiRigal/Yape) — v3.0.0 brings multi-server, dark mode, i18n, Firefox support, and much more.
+A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads. Available for Chrome, Chromium, Edge, and Firefox.
 
-![Screenshot](images/screenshot.jpg)
+**Current version:** 3.1.0 — Manifest V3 with real-time event streaming, dark mode, internationalization, and full Firefox support.
 
 ---
 
 ## Features
 
-- **Downloads** — Monitor active downloads with progress, speed and ETA
-- **Queue** — View queued packages, reorder with drag & drop or arrow buttons
-- **Collector** — Browse collector and push packages to queue
-- **Per-file controls** — Stop, restart or delete individual files and packages
-- **Context menu** — Right-click any link to send it to PyLoad
-- **Multi-URL paste** — Add multiple URLs at once from the popup
-- **Captcha solving** — Solve captchas directly in the popup
-- **Search & filter** — Filter downloads, queue and collector in real time
-- **Multi-server** — Manage multiple PyLoad instances, switch in one click
-- **Event streaming** — Live updates via PyLoad's `getEvents` API
-- **Dark mode** — Automatic, follows your OS preference
-- **Desktop notifications** — Alerts on download complete, errors, captcha waiting
-- **Download stats** — Track packages added over time
-- **Speed limiter** — One-click global bandwidth toggle
-- **Proxy toggle** — Enable/disable PyLoad proxy from the popup
-- **Hoster accounts** — Manage hoster credentials from the options page
-- **Server log viewer** — Read PyLoad server logs from options
-- **Tampermonkey companion** — One-click "Download with PyLoad" buttons on 60+ hoster sites
-- **i18n** — English and French, easy to contribute new languages
-- **Firefox support** — Works on Firefox via `manifest.firefox.json`
+**Core Download Management**
+- Monitor active downloads with progress, speed, and ETA
+- View queued packages and reorder with drag and drop
+- Browse collector and push packages to queue
+- Per-file controls: stop, restart, or delete individual files and packages
+
+**Server & Multi-Account**
+- Manage multiple PyLoad instances, switch in one click
+- Add, edit, and delete servers from options page
+- Per-server credentials (encrypted storage option)
+- Hoster account management for sites requiring login
+
+**User Interface**
+- Dark mode with automatic system preference detection
+- Internationalization: English and French
+- Search and filter across downloads, queue, and collector
+- Download statistics tracking packages over time
+- Desktop notifications for completion, errors, and captcha alerts
+
+**Advanced Features**
+- Event-driven real-time updates via PyLoad's event streaming API
+- Context menu: right-click any link to send it to PyLoad
+- Multi-URL paste: add multiple URLs at once from the popup
+- Captcha solving directly in the popup
+- Server log viewer accessible from options
+- Speed limiter and proxy toggle for quick bandwidth control
+- Tampermonkey companion script with one-click download buttons on 60+ hosters
+- DLC/CCF/RSDF container file upload support
+
+**Technical**
+- Manifest V3 (Chrome) and Firefox-compatible via manifest.firefox.json
+- AES-GCM 256-bit credential encryption
+- Minimal permissions model with optional host permissions
+- Strict Content Security Policy with no inline scripts
+- Login rate limiting to prevent brute force attempts
 
 ---
 
-## Compatibility
-
-| PyLoad version | Auth method | Status |
-|---|---|---|
-| < 0.5.0b3.dev78 | Session cookie | Not supported — use [original extension](https://github.com/RemiRigal/Yape) |
-| >= 0.5.0b3.dev78 | HTTP Basic Auth | Supported |
-
-| Browser | Manifest | Status |
-|---|---|---|
-| Chrome / Chromium / Edge | `manifest.json` (MV3) | Supported |
-| Firefox >= 121 | `manifest.firefox.json` (MV3) | Supported |
-
----
-
-## Install
+## Installation
 
 ### Chrome / Chromium / Edge
 
-1. [Download the latest release](https://github.com/jsoyer/Yape/releases/latest) and unzip, or clone the repo
+1. [Download the latest release](https://github.com/jsoyer/Yape/releases/latest) and unzip, or clone the repository
 2. Go to `chrome://extensions`
-3. Enable **Developer mode** (top-right toggle)
-4. Click **Load unpacked** and select the folder
-5. Click the extension icon, then the gear icon to configure
+3. Enable **Developer mode** (toggle in the top-right corner)
+4. Click **Load unpacked** and select the extension folder
+5. Click the Yape icon in your toolbar, then click the gear icon to configure
 
 ### Firefox
 
-1. Clone or download the repo
-2. Copy `manifest.firefox.json` over `manifest.json` (or rename it)
+1. Clone or download the repository
+2. Copy `manifest.firefox.json` over `manifest.json` (or rename the original)
 3. Go to `about:debugging#/runtime/this-firefox`
 4. Click **Load Temporary Add-on** and select `manifest.json`
+5. Click the Yape icon in your toolbar, then click the gear icon to configure
 
 ---
 
-## Setup
+## Configuration
 
-### Server configuration
+### Add a PyLoad Server
 
-1. Open the **Options page** (gear icon in the popup)
-2. Enter your PyLoad server's host, port and path
-3. Check **Use HTTPS** if your server supports it (recommended)
-4. Click **Save** — the browser will prompt you to grant permission to your server's origin
+1. Click the Yape icon and select the gear icon to open **Options**
+2. Click **+ Add server** (or edit an existing server)
+3. Enter the following:
+   - **Host**: your PyLoad server's IP or domain
+   - **Port**: PyLoad's listening port (default: 8000)
+   - **Path**: optional path prefix (default: empty)
+   - **Use HTTPS**: toggle if your server supports it
+4. Click **Save** — your browser will prompt you to grant permission to the server's origin
 5. Click **Login** and enter your PyLoad credentials
+6. Optionally check **Remember credentials** to store encrypted login details
 
-### Multi-server
+### Multi-Server Setup
 
-You can manage multiple PyLoad instances from the options page:
+- Add multiple servers via **+ Add server**
+- Use **Activate** to switch the active server
+- Each server maintains separate credentials and login state
+- Quick switch from the popup's server dropdown
 
-1. Click **+ Add server** to create a new server entry
-2. Configure each server with its own host, port, path and name
-3. Use the **Activate** button to switch between servers
-4. In the popup, use the server dropdown to switch quickly
+### Credential Storage
 
-Each server keeps its own credentials (session or saved).
-
-### Credentials storage
-
-| Mode | Storage | Survives browser restart |
+| Mode | Storage | Persistence |
 |---|---|---|
-| Default | `chrome.storage.session` (memory only) | No |
-| "Remember credentials" checked | `chrome.storage.local`, encrypted AES-GCM 256-bit | Yes |
+| Default | In-memory session | Cleared on browser restart |
+| "Remember credentials" enabled | Encrypted local storage (AES-GCM 256-bit) | Survives browser restart |
 
-Credentials are never synced across devices. Per-server credentials are namespaced by server ID.
+Credentials are never synced across devices and are isolated per server.
 
 ---
 
-## Tampermonkey Companion
+## Tampermonkey Companion Script
 
-The companion userscript adds a "Download with PyLoad" button next to download links on 60+ supported hoster sites.
+The included userscript adds a "↓ PyLoad" button next to download links on 60+ supported hoster sites.
 
-### Install
+### Setup
 
-1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser
+1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Greasemonkey](https://www.greasespot.net/) in your browser
 2. Create a new script and paste the contents of `yape-companion.user.js`
-3. Edit the `EXTENSION_ID` constant at the top of the script — set it to your Yape extension ID (find it in `chrome://extensions`)
-4. Save and enable the script
+3. At the top of the script, edit the `EXTENSION_ID` constant and set it to your Yape extension ID
+   - Find your extension ID: go to `chrome://extensions` (Chrome) or `about:debugging#/runtime/this-firefox` (Firefox)
+4. Save and enable the script in Tampermonkey's dashboard
 
-The script communicates with the extension via `chrome.runtime.sendMessage` using the `externally_connectable` manifest key. No extra permissions needed.
+The script communicates with the extension via the `externally_connectable` manifest key. No additional permissions are needed.
 
 ---
 
-## Contributing translations
+## Container File Upload
 
-Yape uses Chrome's `chrome.i18n` API with a modular setup:
+Yape supports direct upload of DLC, CCF, and RSDF container files:
+
+1. Open the Yape popup
+2. Navigate to the **Upload Container** section
+3. Click the file picker and select a `.dlc`, `.ccf`, or `.rsdf` file
+4. The container is automatically parsed and packages are added to the queue
+
+---
+
+## Browser Compatibility
+
+| PyLoad Version | Auth Method | Status |
+|---|---|---|
+| < 0.5.0b3.dev78 | Session cookie | Unsupported — use [original extension](https://github.com/RemiRigal/Yape) |
+| >= 0.5.0b3.dev78 | HTTP Basic Auth | Fully supported |
+
+| Browser | Manifest Version | Status |
+|---|---|---|
+| Chrome / Chromium / Edge | MV3 (`manifest.json`) | Fully supported |
+| Firefox >= 121 | MV3 (`manifest.firefox.json`) | Fully supported |
+
+---
+
+## Contributing
+
+### Reporting Issues
+
+Found a bug or have a feature request? [Open an issue](https://github.com/jsoyer/Yape/issues) on GitHub.
+
+### Translating to a New Language
+
+Yape uses Chrome's `chrome.i18n` API with a modular structure:
 
 ```
 _locales/
@@ -123,30 +158,36 @@ _locales/
 
 To add a new language:
 
-1. Create `_locales/<code>/messages.json` (e.g. `de`, `es`, `pt`)
-2. Copy `_locales/en/messages.json` as a starting point
-3. Translate all `"message"` values — keys and `"placeholders"` stay the same
-4. Submit a PR
+1. Create `_locales/<code>/messages.json` (e.g., `de` for German, `es` for Spanish)
+2. Copy `_locales/en/messages.json` as a template
+3. Translate all `"message"` values — keep all keys and `"placeholders"` unchanged
+4. Test the translation in your browser
+5. Submit a pull request
 
-HTML elements use `data-i18n` attributes for automatic translation. JS code uses the `msg()` helper from `js/i18n.js`.
+HTML elements use `data-i18n` attributes for automatic translation. JavaScript code uses the `msg()` helper from `js/i18n.js`.
 
 ---
 
-## Security
+## Architecture
 
-- **AES-GCM 256-bit encryption** for credentials saved to disk (WebCrypto API)
-- **HTTP Basic Auth** on all API requests — no session cookies
-- **Minimal permissions**: `storage`, `contextMenus`, `notifications`, `alarms`
-- **Dynamic host permissions** — no broad `<all_urls>` at install time
-- **No script injection** into third-party pages — notifications via `chrome.notifications`
-- **Strict CSP**: `default-src 'none'`; no `unsafe-eval`, no `unsafe-inline`
-- **Login rate limiting**: exponential backoff after 3 failed attempts (30s to 5min)
-- **ES modules** throughout — no global scope pollution
+- **Manifest V3** with service worker background script
+- **Content script relay** for Tampermonkey communication
+- **AES-GCM 256-bit encryption** for stored credentials (WebCrypto API)
+- **Bootstrap 5** UI with Catppuccin dark mode support
+- **Event streaming** via PyLoad's real-time event API
+- **Modular i18n system** for easy translation contributions
 
-See [PRIVACY.md](PRIVACY.md) for the full data handling policy.
+See [SECURITY.md](SECURITY.md) for details on encryption, CSP, and permission handling.
+See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
+
+---
+
+## Acknowledgments
+
+Yape was originally created by [Rémi Rigal](https://github.com/RemiRigal). This project has since been extensively rewritten with 15+ major features, a complete architecture overhaul, and full Firefox support. Thank you Rémi for the foundation and for your work on the original extension.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Original extension by [Remi Rigal](https://github.com/RemiRigal).
+MIT — see [LICENSE](LICENSE)

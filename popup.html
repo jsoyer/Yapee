@@ -85,6 +85,16 @@
     <button id="multiUrlButton" class="btn btn-sm btn-primary mt-1 w-100" data-i18n="popupAddAll">Add all</button>
   </div>
 
+  <div id="containerUploadDiv" hidden>
+    <div class="dropdown-divider" style="margin: 12px 0 8px;"></div>
+    <label class="font-weight-bold" data-i18n="popupUploadContainer">Upload Container</label>
+    <div class="small text-muted mb-1" data-i18n="popupUploadContainerHelp">Upload a .dlc, .ccf or .rsdf file</div>
+    <div class="d-flex gap-1">
+        <input type="file" id="containerFileInput" class="form-control form-control-sm" accept=".dlc,.ccf,.rsdf">
+        <button id="containerUploadButton" class="btn btn-sm btn-primary" data-i18n="popupUploadButton">Upload</button>
+    </div>
+  </div>
+
   <div id="pageDownloadDiv" hidden>
     <div class="dropdown-divider" style="margin: 20px 0 12px;"></div>
     <label class="font-weight-bold" data-i18n="popupPageDownload">Page Download</label>

@@ -5,3 +5,20 @@
 form {
     min-width: 300px;
 }
+
+.tab-content > .tab-pane {
+    padding-top: 24px;
+}
+
+.nav-tabs {
+    border-bottom-color: var(--bs-border-color);
+}
+
+.nav-tabs .nav-link {
+    color: var(--bs-body-color);
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--bs-body-bg);
+    border-bottom-color: var(--bs-body-bg);
+}

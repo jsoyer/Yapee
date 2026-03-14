@@ -293,6 +293,47 @@
     "message": "(vide)"
   },
 
+  "popupUploadContainer": {
+    "message": "Importer un conteneur"
+  },
+  "popupUploadContainerHelp": {
+    "message": "Importer un fichier .dlc, .ccf ou .rsdf"
+  },
+  "popupUploadButton": {
+    "message": "Importer"
+  },
+  "popupUploadSuccess": {
+    "message": "Conteneur importe"
+  },
+  "popupUploadError": {
+    "message": "Echec de l'import : $1"
+  },
+  "popupInvalidFileType": {
+    "message": "Type de fichier invalide. Acceptes : .dlc, .ccf, .rsdf"
+  },
+
+  "optionsLoading": {
+    "message": "Chargement..."
+  },
+  "optionsDelete": {
+    "message": "Supprimer"
+  },
+  "optionsTabAccounts": {
+    "message": "Comptes"
+  },
+  "optionsTabLogs": {
+    "message": "Logs"
+  },
+  "optionsConfirmDeleteServer": {
+    "message": "Supprimer ce serveur ?"
+  },
+  "optionsConfirmDeleteAccount": {
+    "message": "Supprimer ce compte ?"
+  },
+  "ariaClose": {
+    "message": "Fermer"
+  },
+
   "bgDownloadsComplete": {
     "message": "Tous les telechargements sont termines"
   },
