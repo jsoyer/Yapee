@@ -23,7 +23,7 @@ async function downloadLink(info, tab) {
             return;
         }
         const checkRes = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(info.linkUrl)}"]`, {
-            method: 'GET',
+            method: 'POST',
             redirect: 'error',
             headers: { ...getAuthHeaders() }
         });
@@ -74,8 +74,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     });
 });
 
-chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
-    if (msg.action !== 'addPackage' || !msg.url) return;
+function handleAddPackage(msg, sendResponse) {
+    if (msg.action !== 'addPackage' || !msg.url) return false;
     pullStoredData(() => {
         addPackage(msg.name || msg.url, msg.url, (success, error) => {
             if (success) incrementStat('packagesAdded');
@@ -83,6 +83,14 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
         });
     });
     return true;
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    return handleAddPackage(msg, sendResponse);
+});
+
+chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
+    return handleAddPackage(msg, sendResponse);
 });
 
 // --- Notification on complete ---

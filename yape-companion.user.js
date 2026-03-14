@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Yape — Send to PyLoad
 // @namespace    https://github.com/jsoyer/Yape
-// @version      1.0.0
+// @version      1.1.0
 // @description  Adds a "↓ PyLoad" button next to download links on supported hosters
 // @author       jsoyer
 // @match        *://*/*
@@ -11,12 +11,6 @@
 
 (function () {
     'use strict';
-
-    // ============================================================
-    // CONFIGURATION
-    // Set your Yape extension ID — find it at chrome://extensions
-    // ============================================================
-    const EXTENSION_ID = 'YOUR_EXTENSION_ID_HERE';
 
     // Domains supported by PyLoad plugins
     const HOSTERS = [
@@ -139,27 +133,26 @@
     }
 
     function sendToPyload(url, name, btn) {
-        if (!window.chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+        setState(btn, 'loading', 'Sending…');
+        const timeout = setTimeout(() => {
+            window.removeEventListener('message', onResponse);
             setState(btn, 'error', 'No extension');
             setTimeout(() => setState(btn, 'idle', 'PyLoad'), 3000);
-            return;
-        }
-        setState(btn, 'loading', 'Sending…');
-        try {
-            chrome.runtime.sendMessage(EXTENSION_ID, { action: 'addPackage', url, name }, function (response) {
-                if (chrome.runtime.lastError || !response) {
-                    setState(btn, 'error', 'Failed');
-                } else if (response.success) {
-                    setState(btn, 'success', 'Added!');
-                } else {
-                    setState(btn, 'error', response.error || 'Error');
-                }
-                setTimeout(() => setState(btn, 'idle', 'PyLoad'), 3000);
-            });
-        } catch {
-            setState(btn, 'error', 'Failed');
+        }, 5000);
+        function onResponse(event) {
+            if (event.source !== window || event.data?.type !== 'yape-add-package-response') return;
+            if (event.data.url !== url) return;
+            window.removeEventListener('message', onResponse);
+            clearTimeout(timeout);
+            if (event.data.success) {
+                setState(btn, 'success', 'Added!');
+            } else {
+                setState(btn, 'error', event.data.error || 'Error');
+            }
             setTimeout(() => setState(btn, 'idle', 'PyLoad'), 3000);
         }
+        window.addEventListener('message', onResponse);
+        window.postMessage({ type: 'yape-add-package', url, name }, '*');
     }
 
     function isHosterUrl(href) {

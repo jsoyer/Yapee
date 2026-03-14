@@ -9,12 +9,12 @@ export function abortServerStatus() {
     }
 }
 
-async function apiFetch(path, onSuccess, onError) {
+async function apiFetch(path, onSuccess, onError, method = 'GET') {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
         const res = await fetch(`${origin}${path}`, {
-            method: 'GET', redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
+            method, redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal
         });
         clearTimeout(timeoutId);
         await onSuccess(res);
@@ -171,7 +171,8 @@ export async function checkURL(url, callback) {
             const response = await res.json();
             callback(!Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error'));
         },
-        () => callback(false)
+        () => callback(false),
+        'POST'
     );
 }
 
