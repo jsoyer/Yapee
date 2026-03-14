@@ -190,7 +190,11 @@ saveButton.onclick = function(ev) {
     setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default', function() {
         requestPermission(function() {
             renderServerList();
-            updateLoggedInStatus();
+            updateLoggedInStatus(function() {
+                if (!loginButton.hidden) {
+                    loginButton.click();
+                }
+            });
         });
     });
 };

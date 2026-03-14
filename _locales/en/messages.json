@@ -277,7 +277,7 @@
     "description": "Login prompt"
   },
   "optionsSave": {
-    "message": "Save",
+    "message": "Save & Test",
     "description": "Save button"
   },
   "optionsLogin": {
