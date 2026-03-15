@@ -383,5 +383,15 @@
   },
   "cmdOpenPopup": {
     "message": "Ouvrir le popup Yapee"
+  },
+
+  "bgPackageComplete": {
+    "message": "T\u00e9l\u00e9chargement termin\u00e9 : $1"
+  },
+  "bgDownloadFailed": {
+    "message": "T\u00e9l\u00e9chargement \u00e9chou\u00e9 : $1"
+  },
+  "bgCaptchaWaiting": {
+    "message": "Captcha en attente \u2014 ouvrir Yapee pour r\u00e9soudre"
   }
 }

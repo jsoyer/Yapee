@@ -104,7 +104,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     return handleAddPackage(msg, sendResponse);
 });
 
-// --- Notification on complete + Badge ---
+// --- Badge + Enhanced Notifications ---
 
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== 'checkDownloads') return;
@@ -112,30 +112,115 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         getStatusDownloads((downloads) => {
             const currentCount = downloads.length;
 
-            // Badge: captcha warning takes priority, then download count
-            isCaptchaWaiting((hasCaptcha) => {
-                if (hasCaptcha) {
-                    chrome.action.setBadgeText({ text: '!' });
-                    chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
-                } else if (currentCount > 0) {
-                    chrome.action.setBadgeText({ text: String(currentCount) });
-                    chrome.action.setBadgeBackgroundColor({ color: '#0d6efd' });
-                } else {
-                    chrome.action.setBadgeText({ text: '' });
+            // Build current packages map: { pid: { name, percent, speed } }
+            const currentPackages = {};
+            downloads.forEach(d => {
+                if (!currentPackages[d.packageID]) {
+                    currentPackages[d.packageID] = { name: d.name, percent: 0, speed: 0 };
+                }
+                const pkg = currentPackages[d.packageID];
+                pkg.percent = Math.max(pkg.percent, parseFloat(d.percent) || 0);
+                pkg.speed = Math.max(pkg.speed, d.speed || 0);
+            });
+
+            // Collect fids with error status
+            const errorFids = {};
+            downloads.forEach(d => {
+                const s = (d.statusmsg || '').toLowerCase();
+                if (s === 'failed' || s === 'aborted' || s === 'offline') {
+                    errorFids[d.fid] = d.name;
                 }
             });
 
-            // Notification on complete
-            chrome.storage.session.get(['lastDownloadCount'], (data) => {
-                const lastCount = data.lastDownloadCount || 0;
-                if (lastCount > 0 && currentCount === 0) {
-                    notify('Yapee', chrome.i18n.getMessage('bgDownloadsComplete'), {
-                        id: 'downloadsComplete',
-                        buttons: [{ title: chrome.i18n.getMessage('bgClearFinished') || 'Clear finished' }]
+            chrome.storage.session.get(
+                ['lastDownloadCount', 'lastActivePackages', 'lastCaptchaState', 'notifiedErrors'],
+                (data) => {
+                    const lastCount = data.lastDownloadCount || 0;
+                    const lastPackages = data.lastActivePackages || {};
+                    const lastCaptcha = data.lastCaptchaState || false;
+                    const notifiedErrors = new Set(data.notifiedErrors || []);
+
+                    // Feature 1: Per-package completion
+                    for (const pid of Object.keys(lastPackages)) {
+                        if (!currentPackages[pid]) {
+                            notify('Yapee', chrome.i18n.getMessage('bgPackageComplete', [lastPackages[pid].name]), {
+                                id: `complete-${pid}`
+                            });
+                        }
+                    }
+
+                    // "All downloads complete" with clear button (existing)
+                    if (lastCount > 0 && currentCount === 0) {
+                        notify('Yapee', chrome.i18n.getMessage('bgDownloadsComplete'), {
+                            id: 'downloadsComplete',
+                            buttons: [{ title: chrome.i18n.getMessage('bgClearFinished') || 'Clear finished' }]
+                        });
+                    }
+
+                    // Feature 2: Error notifications
+                    for (const [fid, name] of Object.entries(errorFids)) {
+                        if (!notifiedErrors.has(fid)) {
+                            notifiedErrors.add(fid);
+                            notify('Yapee', chrome.i18n.getMessage('bgDownloadFailed', [name]), {
+                                id: `error-${fid}`
+                            });
+                        }
+                    }
+                    // Prune notifiedErrors: remove fids no longer in active downloads
+                    const activeFids = new Set(downloads.map(d => String(d.fid)));
+                    for (const fid of notifiedErrors) {
+                        if (!activeFids.has(String(fid))) notifiedErrors.delete(fid);
+                    }
+
+                    // Feature 3: Captcha notification + Badge
+                    isCaptchaWaiting((hasCaptcha) => {
+                        if (hasCaptcha) {
+                            chrome.action.setBadgeText({ text: '!' });
+                            chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
+                        } else if (currentCount > 0) {
+                            chrome.action.setBadgeText({ text: String(currentCount) });
+                            chrome.action.setBadgeBackgroundColor({ color: '#0d6efd' });
+                        } else {
+                            chrome.action.setBadgeText({ text: '' });
+                        }
+
+                        if (hasCaptcha && !lastCaptcha) {
+                            notify('Yapee', chrome.i18n.getMessage('bgCaptchaWaiting'), {
+                                id: 'captchaWaiting'
+                            });
+                        }
+
+                        // Feature 4: Progress notification for top active download
+                        if (currentCount > 0) {
+                            const top = downloads.reduce((a, b) => (b.speed > a.speed ? b : a), downloads[0]);
+                            const pct = Math.min(100, Math.max(0, Math.round(parseFloat(top.percent) || 0)));
+                            const speedStr = top.speed > 0 ? `${(top.speed / (1000 * 1000)).toFixed(1)} MB/s` : '';
+                            const message = speedStr ? `${top.name} — ${speedStr}` : top.name;
+                            chrome.notifications.update('downloadProgress', { progress: pct, message }, (updated) => {
+                                if (!updated) {
+                                    chrome.notifications.create('downloadProgress', {
+                                        type: 'progress',
+                                        title: 'Yapee',
+                                        message,
+                                        iconUrl: './images/icon.png',
+                                        progress: pct
+                                    });
+                                }
+                            });
+                        } else {
+                            chrome.notifications.clear('downloadProgress');
+                        }
+
+                        // Save state
+                        chrome.storage.session.set({
+                            lastDownloadCount: currentCount,
+                            lastActivePackages: currentPackages,
+                            lastCaptchaState: hasCaptcha,
+                            notifiedErrors: [...notifiedErrors]
+                        });
                     });
                 }
-                chrome.storage.session.set({ lastDownloadCount: currentCount });
-            });
+            );
         });
     });
 });

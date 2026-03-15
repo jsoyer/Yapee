@@ -541,5 +541,24 @@
   "cmdOpenPopup": {
     "message": "Open Yapee popup",
     "description": "Keyboard shortcut description"
+  },
+
+  "bgPackageComplete": {
+    "message": "Download complete: $1",
+    "description": "Per-package completion notification",
+    "placeholders": {
+      "1": { "content": "$1", "example": "movie.mkv" }
+    }
+  },
+  "bgDownloadFailed": {
+    "message": "Download failed: $1",
+    "description": "Error notification when a download fails",
+    "placeholders": {
+      "1": { "content": "$1", "example": "file.zip" }
+    }
+  },
+  "bgCaptchaWaiting": {
+    "message": "Captcha waiting — open Yapee to solve",
+    "description": "Desktop notification when captcha is pending"
   }
 }
