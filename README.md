@@ -1,8 +1,8 @@
-# Yape — PyLoad Browser Extension
+# Yapee — PyLoad Browser Extension
 
 A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads. Available for Chrome, Chromium, Edge, and Firefox.
 
-**Current version:** 3.1.0 — Manifest V3 with real-time event streaming, dark mode, internationalization, and full Firefox support.
+**Current version:** 3.3.0 — Manifest V3 with real-time event streaming, dark mode, internationalization, and full Firefox support.
 
 ---
 
@@ -50,11 +50,11 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 
 ### Chrome / Chromium / Edge
 
-1. [Download the latest release](https://github.com/jsoyer/Yape/releases/latest) and unzip, or clone the repository
+1. [Download the latest release](https://github.com/jsoyer/Yapee/releases/latest) and unzip, or clone the repository
 2. Go to `chrome://extensions`
 3. Enable **Developer mode** (toggle in the top-right corner)
 4. Click **Load unpacked** and select the extension folder
-5. Click the Yape icon in your toolbar, then click the gear icon to configure
+5. Click the Yapee icon in your toolbar, then click the gear icon to configure
 
 ### Firefox
 
@@ -62,7 +62,7 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 2. Copy `manifest.firefox.json` over `manifest.json` (or rename the original)
 3. Go to `about:debugging#/runtime/this-firefox`
 4. Click **Load Temporary Add-on** and select `manifest.json`
-5. Click the Yape icon in your toolbar, then click the gear icon to configure
+5. Click the Yapee icon in your toolbar, then click the gear icon to configure
 
 ---
 
@@ -70,7 +70,7 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 
 ### Add a PyLoad Server
 
-1. Click the Yape icon and select the gear icon to open **Options**
+1. Click the Yapee icon and select the gear icon to open **Options**
 2. Click **+ Add server** (or edit an existing server)
 3. Enter the following:
    - **Host**: your PyLoad server's IP or domain
@@ -107,7 +107,7 @@ The included userscript adds a "↓ PyLoad" button next to download links on 60+
 
 1. Install [Tampermonkey](https://www.tampermonkey.net/) or [Greasemonkey](https://www.greasespot.net/) in your browser
 2. Create a new script and paste the contents of `yape-companion.user.js`
-3. At the top of the script, edit the `EXTENSION_ID` constant and set it to your Yape extension ID
+3. At the top of the script, edit the `EXTENSION_ID` constant and set it to your Yapee extension ID
    - Find your extension ID: go to `chrome://extensions` (Chrome) or `about:debugging#/runtime/this-firefox` (Firefox)
 4. Save and enable the script in Tampermonkey's dashboard
 
@@ -117,9 +117,9 @@ The script communicates with the extension via the `externally_connectable` mani
 
 ## Container File Upload
 
-Yape supports direct upload of DLC, CCF, and RSDF container files:
+Yapee supports direct upload of DLC, CCF, and RSDF container files:
 
-1. Open the Yape popup
+1. Open the Yapee popup
 2. Navigate to the **Upload Container** section
 3. Click the file picker and select a `.dlc`, `.ccf`, or `.rsdf` file
 4. The container is automatically parsed and packages are added to the queue
@@ -144,11 +144,11 @@ Yape supports direct upload of DLC, CCF, and RSDF container files:
 
 ### Reporting Issues
 
-Found a bug or have a feature request? [Open an issue](https://github.com/jsoyer/Yape/issues) on GitHub.
+Found a bug or have a feature request? [Open an issue](https://github.com/jsoyer/Yapee/issues) on GitHub.
 
 ### Translating to a New Language
 
-Yape uses Chrome's `chrome.i18n` API with a modular structure:
+Yapee uses Chrome's `chrome.i18n` API with a modular structure:
 
 ```
 _locales/
@@ -184,7 +184,7 @@ See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
 
 ## Acknowledgments
 
-Yape was originally created by [Rémi Rigal](https://github.com/RemiRigal). This project has since been extensively rewritten with 15+ major features, a complete architecture overhaul, and full Firefox support. Thank you Rémi for the foundation and for your work on the original extension.
+Yapee was originally created by [Remi Rigal](https://github.com/RemiRigal). This project has since been extensively rewritten with 15+ major features, a complete architecture overhaul, and full Firefox support. Thank you Remi for the foundation and for your work on the original extension.
 
 ---
 

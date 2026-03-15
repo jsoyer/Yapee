@@ -1,14 +1,14 @@
-# Privacy Policy — Yape
+# Privacy Policy — Yapee
 
-**Last updated: 2026-03-10**
+**Last updated: 2026-03-15**
 
-Yape is a Chrome extension that allows you to monitor and send downloads to your self-hosted [PyLoad](https://pyload.net) server. This policy describes what data is collected, how it is stored, and what is transmitted.
+Yapee is a Chrome extension that allows you to monitor and send downloads to your self-hosted [PyLoad](https://pyload.net) server. This policy describes what data is collected, how it is stored, and what is transmitted.
 
 ---
 
 ## Data collected and stored
 
-Yape stores the following data **locally on your device only**, using `chrome.storage.local`:
+Yapee stores the following data **locally on your device only**, using `chrome.storage.local`:
 
 | Data | Purpose | Storage |
 |---|---|---|
@@ -21,18 +21,18 @@ If you do **not** check "Remember credentials", your login credentials are store
 
 ## Data transmitted
 
-The only network requests made by Yape are to the PyLoad server URL you configure yourself. No data is sent to any third-party server, analytics service, or remote endpoint controlled by the extension developer.
+The only network requests made by Yapee are to the PyLoad server URL you configure yourself. No data is sent to any third-party server, analytics service, or remote endpoint controlled by the extension developer.
 
 Specifically:
 - Your credentials are sent to your PyLoad server as an HTTP Basic Auth header to authenticate API requests.
 - URLs you choose to download are sent to your PyLoad server's API.
-- If you use HTTP instead of HTTPS, credentials are transmitted in cleartext over the network — Yape displays a warning in this case.
+- If you use HTTP instead of HTTPS, credentials are transmitted in cleartext over the network — Yapee displays a warning in this case.
 
 ---
 
 ## Third parties
 
-Yape does **not**:
+Yapee does **not**:
 - Share any data with third parties
 - Sell user data
 - Use data for advertising or tracking
@@ -42,7 +42,7 @@ Yape does **not**:
 
 ## Bundled third-party libraries
 
-Yape bundles the following open-source libraries. They run entirely locally and make no network requests of their own:
+Yapee bundles the following open-source libraries. They run entirely locally and make no network requests of their own:
 
 - [jQuery](https://jquery.com) (MIT License)
 - [Bootstrap](https://getbootstrap.com) (MIT License)
@@ -53,10 +53,10 @@ Yape bundles the following open-source libraries. They run entirely locally and 
 
 ## Data deletion
 
-To delete all data stored by Yape:
+To delete all data stored by Yapee:
 
 1. Go to `chrome://extensions`
-2. Find Yape and click **Details**
+2. Find Yapee and click **Details**
 3. Click **Clear site data**
 
 Alternatively, uninstalling the extension removes all stored data.
@@ -66,4 +66,4 @@ Alternatively, uninstalling the extension removes all stored data.
 ## Contact
 
 If you have questions about this policy, open an issue at:
-[https://github.com/jsoyer/Yape/issues](https://github.com/jsoyer/Yape/issues)
+[https://github.com/jsoyer/Yapee/issues](https://github.com/jsoyer/Yapee/issues)

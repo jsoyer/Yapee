@@ -1,6 +1,6 @@
 # Security
 
-Yape is designed with privacy and security as core principles. This document outlines the extension's security model and best practices.
+Yapee is designed with privacy and security as core principles. This document outlines the extension's security model and best practices.
 
 ---
 
@@ -27,7 +27,7 @@ Your password is never stored in plaintext, logged, or transmitted unencrypted t
 
 ## Content Security Policy
 
-Yape enforces a strict Content Security Policy to prevent injection attacks:
+Yapee enforces a strict Content Security Policy to prevent injection attacks:
 
 ```
 default-src 'none'                    # Block everything by default
@@ -52,7 +52,7 @@ font-src 'self'                       # Fonts bundled with extension
 | Permission | Purpose |
 |---|---|
 | `storage` | Store server configuration and credentials |
-| `contextMenus` | Add "Download with Yape" to right-click menu |
+| `contextMenus` | Add "Download with Yapee" to right-click menu |
 | `notifications` | Send desktop alerts for downloads and errors |
 | `alarms` | Schedule credential refresh tasks |
 
@@ -105,7 +105,7 @@ Rate limit state is stored in session storage and resets when your browser resta
 
 ### HTTP Warning
 
-If you configure an HTTP (non-HTTPS) server, Yape displays a warning:
+If you configure an HTTP (non-HTTPS) server, Yapee displays a warning:
 
 - In the server options form
 - In the login modal before authentication
@@ -127,13 +127,13 @@ When using HTTPS:
 When using HTTP:
 - Credentials are sent in plaintext over the network
 - Only safe on trusted, local networks (e.g., 192.168.x.x)
-- Yape warns you when using HTTP
+- Yapee warns you when using HTTP
 
 ---
 
 ## No Tracking or Telemetry
 
-Yape does **not**:
+Yapee does **not**:
 
 - Collect analytics or usage data
 - Send telemetry to any server
@@ -141,7 +141,7 @@ Yape does **not**:
 - Track download history outside your device
 - Transmit data to the extension developer
 
-The only network requests made by Yape are to the PyLoad server you configure. You have full control over where your data goes.
+The only network requests made by Yapee are to the PyLoad server you configure. You have full control over where your data goes.
 
 See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
 
@@ -149,7 +149,7 @@ See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
 
 ## Third-Party Libraries
 
-Yape bundles the following open-source libraries. They run entirely locally and make no network requests:
+Yapee bundles the following open-source libraries. They run entirely locally and make no network requests:
 
 - [jQuery](https://jquery.com) (MIT License)
 - [Bootstrap](https://getbootstrap.com) (MIT License)
@@ -173,7 +173,7 @@ The companion userscript (`yape-companion.user.js`) communicates with the extens
 
 ## Reporting a Security Vulnerability
 
-If you discover a security vulnerability in Yape, please do not disclose it publicly. Instead:
+If you discover a security vulnerability in Yapee, please do not disclose it publicly. Instead:
 
 1. Open a private issue on GitHub (mark as private)
 2. Email the maintainer with details and reproduction steps
@@ -185,7 +185,7 @@ Security fixes are released as soon as possible and will be noted in the changel
 
 ## Browser Security Features Used
 
-Yape leverages built-in browser security features:
+Yapee leverages built-in browser security features:
 
 - **Manifest V3**: Service workers instead of persistent background pages
 - **WebCrypto API**: Hardware-accelerated encryption when available
@@ -208,7 +208,7 @@ Yape leverages built-in browser security features:
 
 ## Ongoing Security
 
-Yape follows secure development practices:
+Yapee follows secure development practices:
 
 - Regular code reviews before merging
 - Dependency updates to patch vulnerabilities

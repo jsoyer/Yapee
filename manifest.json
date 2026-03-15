@@ -21,7 +21,7 @@
     "48": "images/icon_48.png",
     "128": "images/icon_128.png"
   },
-  "homepage_url": "https://github.com/jsoyer/Yape",
+  "homepage_url": "https://github.com/jsoyer/Yapee",
   "options_page": "options.html",
   "background": {
     "service_worker": "background.js",
