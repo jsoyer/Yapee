@@ -16,6 +16,8 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 - **v3.0.0** — Per-server credentials, dark mode (auto), notification on download complete, search/filter in popup, drag & drop reorder in queue, download stats counter, Firefox port (`manifest.firefox.json`), i18n FR/EN modular (`_locales/`, `js/i18n.js`)
 - **v3.1.0** — DLC/CCF/RSDF container upload, options page redesign (tabbed layout), content-relay for companion script (no more EXTENSION_ID), checkURLs POST fix, search debounce, accessibility (aria-labels), i18n completeness, Firefox content-relay, SECURITY.md, fork independence (README rewrite, LICENSE update)
 - **v3.2.0** — Security hardening: content-relay URL validation (HTTP/S only), postMessage targetOrigin restriction, companion script per-hoster `@match` (no more `*://*/*`), MutationObserver debounce, consolidated `onMessage` listener, improved `.gitignore`
+- **v3.3.0** — Rename Yape to Yapee, badge live (download count + captcha warning), actionable "all complete" notification with clear button, speed limit KB/s input, keyboard shortcuts (Alt+Shift+P pause, Alt+Shift+Y popup), global queue ETA, collector push-all and queue retry buttons
+- **v3.4.0** — Enhanced notifications: per-package completion alerts, error/failure desktop notifications, captcha pending desktop alert, progress bar notification (`type: 'progress'`) for active downloads
 
 ---
 
