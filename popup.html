@@ -65,6 +65,13 @@
     </div>
   </div>
 
+  <div id="batchBar" class="d-flex gap-1 mb-2 align-items-center" hidden>
+    <input type="checkbox" id="selectAllQueue" class="form-check-input" data-i18n-aria="popupSelectAll" aria-label="Select all">
+    <span id="batchCount" class="text-muted small flex-grow-1"></span>
+    <button id="batchDeleteBtn" class="btn btn-sm btn-outline-danger" hidden>
+      <i class="fa fa-trash me-1"></i><span data-i18n="popupBatchDelete">Delete</span>
+    </button>
+  </div>
   <div id="queueDiv" hidden></div>
   <div id="collectorDiv" hidden></div>
 
@@ -88,6 +95,9 @@
     <div class="dropdown-divider" style="margin: 12px 0 8px;"></div>
     <label class="font-weight-bold" data-i18n="popupAddUrls">Add URLs</label>
     <textarea id="multiUrlInput" class="form-control form-control-sm mt-1" rows="3" data-i18n-placeholder="popupOneUrlPerLine" placeholder="One URL per line"></textarea>
+    <select id="existingPackageSelect" class="form-select form-select-sm mt-1" hidden>
+      <option value="" data-i18n="popupNewPackage">New package</option>
+    </select>
     <button id="multiUrlButton" class="btn btn-sm btn-primary mt-1 w-100" data-i18n="popupAddAll">Add all</button>
   </div>
 

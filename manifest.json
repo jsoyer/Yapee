@@ -1,9 +1,9 @@
 {
   "name": "__MSG_extensionName__",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
-  "permissions": ["storage", "contextMenus", "notifications", "alarms"],
+  "permissions": ["storage", "contextMenus", "notifications", "alarms", "sidePanel", "scripting"],
   "host_permissions": [],
   "optional_host_permissions": ["http://*/", "https://*/"],
   "action": {
@@ -48,6 +48,9 @@
       },
       "description": "__MSG_cmdOpenPopup__"
     }
+  },
+  "side_panel": {
+    "default_path": "popup.html"
   },
   "externally_connectable": {
     "matches": [

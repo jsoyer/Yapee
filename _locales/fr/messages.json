@@ -393,5 +393,36 @@
   },
   "bgCaptchaWaiting": {
     "message": "Captcha en attente \u2014 ouvrir Yapee pour r\u00e9soudre"
+  },
+
+  "popupBatchDelete": {
+    "message": "Supprimer la s\u00e9lection"
+  },
+  "popupBatchSelected": {
+    "message": "$1 s\u00e9lectionn\u00e9(s)"
+  },
+  "popupSelectAll": {
+    "message": "Tout s\u00e9lectionner"
+  },
+  "ariaRenamePackage": {
+    "message": "Double-clic pour renommer"
+  },
+  "popupRenameFailed": {
+    "message": "\u00c9chec du renommage"
+  },
+  "popupNewPackage": {
+    "message": "Nouveau paquet"
+  },
+  "popupLinksExtracted": {
+    "message": "$1 lien(s) h\u00e9bergeur trouv\u00e9(s)"
+  },
+  "bgExtractLinks": {
+    "message": "Extraire les liens h\u00e9bergeur avec Yapee"
+  },
+  "bgLinksFound": {
+    "message": "$1 lien(s) trouv\u00e9(s). Ouvrir Yapee pour ajouter."
+  },
+  "bgNoLinksFound": {
+    "message": "Aucun lien h\u00e9bergeur trouv\u00e9 sur cette page"
   }
 }

@@ -38,3 +38,29 @@ body {
 .yape-dragging {
     opacity: 0.4;
 }
+
+/* Side panel / sidebar: full-width layout when height exceeds popup cap */
+@media (min-height: 601px) {
+    html, body {
+        min-width: unset;
+        max-width: unset;
+        width: 100%;
+        min-height: 100vh;
+    }
+}
+
+/* Rename hint on queue package names */
+.queue-name {
+    cursor: pointer;
+}
+
+.queue-name .edit-hint {
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 0.7em;
+    margin-left: 4px;
+}
+
+.queue-name:hover .edit-hint {
+    opacity: 0.4;
+}

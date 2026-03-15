@@ -64,20 +64,74 @@ async function downloadLink(info, tab) {
     }
 }
 
+// --- Hoster domain list for link extraction ---
+
+function getHosterDomains() {
+    const manifest = chrome.runtime.getManifest();
+    const patterns = manifest.externally_connectable?.matches || [];
+    const domains = new Set();
+    patterns.forEach(p => {
+        const match = p.match(/\*:\/\/\*?\.?([^/]+)\//);
+        if (match) domains.add(match[1]);
+    });
+    return [...domains];
+}
+
 chrome.runtime.onInstalled.addListener( () => {
     chrome.contextMenus.create({
         id: 'yape',
         title: chrome.i18n.getMessage('bgContextMenu'),
         contexts:['link']
     });
+    chrome.contextMenus.create({
+        id: 'yape-extract',
+        title: chrome.i18n.getMessage('bgExtractLinks'),
+        contexts:['page']
+    });
     chrome.alarms.create('checkDownloads', { periodInMinutes: 0.5 });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if ('yape' !== info.menuItemId) return;
-    pullStoredData(() => {
-        downloadLink(info, tab);
-    });
+    if (info.menuItemId === 'yape') {
+        pullStoredData(() => { downloadLink(info, tab); });
+        return;
+    }
+    if (info.menuItemId === 'yape-extract') {
+        const domains = getHosterDomains();
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (domainList) => {
+                const links = new Set();
+                document.querySelectorAll('a[href]').forEach(a => {
+                    try {
+                        const url = new URL(a.href);
+                        if (domainList.some(d => url.hostname === d || url.hostname.endsWith('.' + d))) {
+                            links.add(a.href);
+                        }
+                    } catch {}
+                });
+                return [...links];
+            },
+            args: [domains]
+        }).then(results => {
+            const links = results[0]?.result || [];
+            if (links.length > 0) {
+                chrome.storage.session.set({ extractedLinks: links });
+                notify('Yapee', chrome.i18n.getMessage('bgLinksFound', [String(links.length)]), {
+                    id: 'linksExtracted'
+                });
+            } else {
+                notify('Yapee', chrome.i18n.getMessage('bgNoLinksFound'), {
+                    id: 'linksExtracted'
+                });
+            }
+        }).catch(() => {
+            notify('Yapee', chrome.i18n.getMessage('bgNoLinksFound'), {
+                id: 'linksExtracted'
+            });
+        });
+        return;
+    }
 });
 
 function handleAddPackage(msg, sendResponse) {

@@ -1,9 +1,9 @@
 {
   "name": "__MSG_extensionName__",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
-  "permissions": ["storage", "contextMenus", "notifications", "alarms"],
+  "permissions": ["storage", "contextMenus", "notifications", "alarms", "scripting"],
   "host_permissions": [],
   "optional_host_permissions": ["http://*/", "https://*/"],
   "action": {
@@ -47,6 +47,14 @@
         "default": "Alt+Shift+Y"
       },
       "description": "__MSG_cmdOpenPopup__"
+    }
+  },
+  "sidebar_action": {
+    "default_panel": "popup.html",
+    "default_title": "__MSG_extensionName__",
+    "default_icon": {
+      "16": "images/icon_16.png",
+      "32": "images/icon_32.png"
     }
   },
   "browser_specific_settings": {

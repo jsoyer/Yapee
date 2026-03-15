@@ -560,5 +560,55 @@
   "bgCaptchaWaiting": {
     "message": "Captcha waiting — open Yapee to solve",
     "description": "Desktop notification when captcha is pending"
+  },
+
+  "popupBatchDelete": {
+    "message": "Delete selected",
+    "description": "Batch delete button in queue"
+  },
+  "popupBatchSelected": {
+    "message": "$1 selected",
+    "description": "Batch selection count",
+    "placeholders": {
+      "1": { "content": "$1", "example": "3" }
+    }
+  },
+  "popupSelectAll": {
+    "message": "Select all",
+    "description": "Select all checkbox aria label"
+  },
+  "ariaRenamePackage": {
+    "message": "Double-click to rename",
+    "description": "Tooltip for package name in queue"
+  },
+  "popupRenameFailed": {
+    "message": "Rename failed",
+    "description": "Error when package rename fails"
+  },
+  "popupNewPackage": {
+    "message": "New package",
+    "description": "Default option in existing package dropdown"
+  },
+  "popupLinksExtracted": {
+    "message": "$1 hoster link(s) found",
+    "description": "Success message after link extraction",
+    "placeholders": {
+      "1": { "content": "$1", "example": "5" }
+    }
+  },
+  "bgExtractLinks": {
+    "message": "Extract hoster links with Yapee",
+    "description": "Context menu for link extraction"
+  },
+  "bgLinksFound": {
+    "message": "Found $1 hoster link(s). Open Yapee to add.",
+    "description": "Notification after link extraction",
+    "placeholders": {
+      "1": { "content": "$1", "example": "5" }
+    }
+  },
+  "bgNoLinksFound": {
+    "message": "No hoster links found on this page",
+    "description": "Notification when no links found"
   }
 }

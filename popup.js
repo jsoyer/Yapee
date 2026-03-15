@@ -3,9 +3,9 @@ import {
     isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus, getMaxSpeed, setMaxSpeed,
     addPackage, checkURL, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads,
-    stopDownload, restartFile, restartPackage, deletePackage, getCollectorData, pushToQueue,
+    stopDownload, restartFile, restartPackage, deletePackage, deletePackages, getCollectorData, pushToQueue,
     getProxyStatus, toggleProxy, getServerVersion,
-    getEvents, getQueuePackages, orderPackage,
+    getEvents, getQueuePackages, orderPackage, setPackageData, addFiles,
     getCaptchaTask, setCaptchaResult,
     uploadContainer
 } from './js/pyload-api.js';
@@ -66,6 +66,11 @@ let searchInput = document.getElementById('searchInput');
 let statsDiv = document.getElementById('statsDiv');
 let queueEtaSpan = document.getElementById('queueEta');
 let maxSpeedInput = document.getElementById('maxSpeedInput');
+let batchBar = document.getElementById('batchBar');
+let selectAllQueue = document.getElementById('selectAllQueue');
+let batchCount = document.getElementById('batchCount');
+let batchDeleteBtn = document.getElementById('batchDeleteBtn');
+let existingPackageSelect = document.getElementById('existingPackageSelect');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
@@ -75,6 +80,7 @@ let activeView = 'downloads';
 let currentCaptchaTask = null;
 let searchTerm = '';
 let dragSrcIndex = null;
+let selectedPids = new Set();
 const eventUuid = crypto.randomUUID();
 
 function formatBytes(bytes) {
@@ -376,9 +382,54 @@ function buildQueueItem(pkg, index, total) {
         orderPackage(pkg.pid, index, function() { updateQueueView(); });
     };
 
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input me-1 flex-shrink-0';
+    checkbox.checked = selectedPids.has(pkg.pid);
+    checkbox.onchange = function() {
+        if (checkbox.checked) selectedPids.add(pkg.pid);
+        else selectedPids.delete(pkg.pid);
+        updateBatchBar();
+    };
+    checkbox.onclick = function(e) { e.stopPropagation(); };
+
     const nameDiv = document.createElement('div');
-    nameDiv.className = 'ellipsis flex-grow-1';
+    nameDiv.className = 'ellipsis flex-grow-1 queue-name';
     nameDiv.textContent = pkg.name;
+    nameDiv.title = msg('ariaRenamePackage');
+
+    const editHint = document.createElement('i');
+    editHint.className = 'fa fa-pencil-alt edit-hint';
+    nameDiv.appendChild(editHint);
+
+    nameDiv.ondblclick = function(e) {
+        e.stopPropagation();
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control form-control-sm';
+        input.value = pkg.name;
+        input.style.cssText = 'font-size: inherit';
+        nameDiv.replaceWith(input);
+        input.focus();
+        input.select();
+
+        const save = function() {
+            const newName = input.value.trim();
+            if (newName && newName !== pkg.name) {
+                setPackageData(pkg.pid, { name: newName }, function(ok) {
+                    if (ok) updateQueueView();
+                    else { input.replaceWith(nameDiv); setErrorMessage(msg('popupRenameFailed')); }
+                });
+            } else {
+                input.replaceWith(nameDiv);
+            }
+        };
+        input.onblur = save;
+        input.onkeydown = function(ev) {
+            if (ev.key === 'Enter') { ev.preventDefault(); save(); }
+            if (ev.key === 'Escape') input.replaceWith(nameDiv);
+        };
+    };
 
     const countSpan = document.createElement('span');
     countSpan.className = 'text-muted';
@@ -428,6 +479,7 @@ function buildQueueItem(pkg, index, total) {
         deletePackage(pkg.pid, function() { updateQueueView(); });
     };
 
+    row.appendChild(checkbox);
     row.appendChild(nameDiv);
     row.appendChild(countSpan);
     row.appendChild(upBtn);
@@ -436,6 +488,38 @@ function buildQueueItem(pkg, index, total) {
     row.appendChild(delBtn);
     return row;
 }
+
+function updateBatchBar() {
+    const count = selectedPids.size;
+    batchDeleteBtn.hidden = count === 0;
+    batchCount.textContent = count > 0 ? msg('popupBatchSelected', [String(count)]) : '';
+    selectAllQueue.indeterminate = false;
+    const checkboxes = queueDiv.querySelectorAll('input[type="checkbox"]');
+    if (checkboxes.length > 0 && count === checkboxes.length) selectAllQueue.checked = true;
+    else if (count === 0) selectAllQueue.checked = false;
+    else selectAllQueue.indeterminate = true;
+}
+
+selectAllQueue.onchange = function() {
+    const checkboxes = queueDiv.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(cb) {
+        cb.checked = selectAllQueue.checked;
+        const pid = parseInt(cb.closest('[data-pid]').dataset.pid, 10);
+        if (selectAllQueue.checked) selectedPids.add(pid);
+        else selectedPids.delete(pid);
+    });
+    updateBatchBar();
+};
+
+batchDeleteBtn.onclick = function() {
+    if (selectedPids.size === 0) return;
+    setButtonLoading(batchDeleteBtn, true);
+    deletePackages([...selectedPids], function() {
+        selectedPids.clear();
+        setButtonLoading(batchDeleteBtn, false);
+        updateQueueView();
+    });
+};
 
 function updateQueueView() {
     getQueuePackages(function(packages) {
@@ -450,12 +534,34 @@ function updateQueueView() {
             empty.className = 'text-center m-4 text-muted';
             empty.textContent = msg('popupQueueEmpty');
             queueDiv.appendChild(empty);
+            batchBar.hidden = true;
             return;
+        }
+
+        // Prune selectedPids to only include visible packages
+        const visiblePids = new Set(filtered.map(p => p.pid));
+        for (const pid of selectedPids) {
+            if (!visiblePids.has(pid)) selectedPids.delete(pid);
         }
 
         filtered.forEach(function(pkg, index) {
             queueDiv.appendChild(buildQueueItem(pkg, index, filtered.length));
         });
+
+        batchBar.hidden = false;
+        updateBatchBar();
+
+        // Populate existing-package dropdown for add-to-existing feature
+        existingPackageSelect.hidden = false;
+        const currentVal = existingPackageSelect.value;
+        while (existingPackageSelect.options.length > 1) existingPackageSelect.remove(1);
+        packages.forEach(function(pkg) {
+            const opt = document.createElement('option');
+            opt.value = pkg.pid;
+            opt.textContent = pkg.name;
+            existingPackageSelect.appendChild(opt);
+        });
+        existingPackageSelect.value = currentVal;
     });
 }
 
@@ -556,7 +662,9 @@ function switchTab(tab) {
 
     statusDiv.hidden = tab !== 'downloads';
     queueDiv.hidden = tab !== 'queue';
+    batchBar.hidden = tab !== 'queue';
     collectorDiv.hidden = tab !== 'collector';
+    if (tab !== 'queue') { selectedPids.clear(); }
 
     if (tab === 'downloads') {
         updateStatusDownloads();
@@ -700,6 +808,27 @@ multiUrlButton.onclick = function() {
     const lines = multiUrlInput.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (!lines.length) return;
     setButtonLoading(multiUrlButton, true);
+
+    const targetPid = existingPackageSelect.value;
+
+    // Add to existing package
+    if (targetPid) {
+        addFiles(parseInt(targetPid, 10), lines, function(ok) {
+            setButtonLoading(multiUrlButton, false);
+            if (ok) {
+                multiUrlInput.value = '';
+                incrementStat('packagesAdded');
+                setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
+            } else {
+                setErrorMessage(msg('popupUrlsFailed', [String(lines.length)]));
+            }
+            updateStatusDownloads();
+            updateStats();
+        });
+        return;
+    }
+
+    // Create new packages (existing behavior)
     let done = 0;
     let errors = 0;
     lines.forEach(function(url) {
@@ -798,6 +927,15 @@ pullStoredData(function() {
                 setActiveServer(serverSelect.value, () => location.reload());
             };
         }
+
+        // Check for extracted links from link extractor
+        chrome.storage.session.get(['extractedLinks'], function(data) {
+            if (data.extractedLinks && data.extractedLinks.length > 0) {
+                multiUrlInput.value = data.extractedLinks.join('\n');
+                chrome.storage.session.remove('extractedLinks');
+                setSuccessMessage(msg('popupLinksExtracted', [String(data.extractedLinks.length)]));
+            }
+        });
 
         chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
             const url = tabs[0].url;

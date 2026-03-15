@@ -215,6 +215,30 @@ export async function deletePackage(pid, callback) {
     );
 }
 
+export async function deletePackages(pids, callback) {
+    apiFetch(`/api/deletePackages?package_ids=[${pids.join(',')}]`,
+        res => callback(res.ok),
+        () => callback(false),
+        'POST'
+    );
+}
+
+export async function setPackageData(pid, data, callback) {
+    apiFetch(`/api/setPackageData?pid=${pid}&data=${encodeURIComponent(JSON.stringify(data))}`,
+        res => callback(res.ok),
+        () => callback(false),
+        'POST'
+    );
+}
+
+export async function addFiles(pid, links, callback) {
+    apiFetch(`/api/addFiles?pid=${pid}&links=${encodeURIComponent(JSON.stringify(links))}`,
+        res => callback(res.ok),
+        () => callback(false),
+        'POST'
+    );
+}
+
 export async function restartPackage(pid, callback) {
     apiFetch(`/api/restartPackage?pid=${pid}`,
         res => callback(res.ok),
