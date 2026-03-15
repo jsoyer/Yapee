@@ -363,5 +363,25 @@
   },
   "bgContextMenu": {
     "message": "T\u00e9l\u00e9charger avec Yapee"
+  },
+  "bgClearFinished": {
+    "message": "Supprimer termin\u00e9s"
+  },
+
+  "popupMaxSpeedPlaceholder": {
+    "message": "Ko/s"
+  },
+  "ariaMaxSpeed": {
+    "message": "Vitesse max (Ko/s)"
+  },
+  "popupQueueEta": {
+    "message": "~$1 restant"
+  },
+
+  "cmdTogglePause": {
+    "message": "Pause/reprise des t\u00e9l\u00e9chargements"
+  },
+  "cmdOpenPopup": {
+    "message": "Ouvrir le popup Yapee"
   }
 }

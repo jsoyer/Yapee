@@ -512,5 +512,34 @@
   "bgContextMenu": {
     "message": "Download with Yapee",
     "description": "Context menu item label"
+  },
+  "bgClearFinished": {
+    "message": "Clear finished",
+    "description": "Notification button to clear finished downloads"
+  },
+
+  "popupMaxSpeedPlaceholder": {
+    "message": "KB/s",
+    "description": "Max speed input placeholder"
+  },
+  "ariaMaxSpeed": {
+    "message": "Max download speed (KB/s)",
+    "description": "Max speed input title/aria"
+  },
+  "popupQueueEta": {
+    "message": "~$1 remaining",
+    "description": "Global queue ETA display",
+    "placeholders": {
+      "1": { "content": "$1", "example": "2h30" }
+    }
+  },
+
+  "cmdTogglePause": {
+    "message": "Toggle pause/resume downloads",
+    "description": "Keyboard shortcut description"
+  },
+  "cmdOpenPopup": {
+    "message": "Open Yapee popup",
+    "description": "Keyboard shortcut description"
   }
 }

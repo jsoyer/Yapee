@@ -1,5 +1,5 @@
 import { pullStoredData, origin, getAuthHeaders, incrementStat } from './js/storage.js';
-import { addPackage, getStatusDownloads } from './js/pyload-api.js';
+import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause } from './js/pyload-api.js';
 
 function nameFromUrl(url) {
     try {
@@ -11,12 +11,13 @@ function nameFromUrl(url) {
     return url.split('/').pop() || url;
 }
 
-const notify = function(title, message) {
-    return chrome.notifications.create('', {
+const notify = function(title, message, options = {}) {
+    return chrome.notifications.create(options.id || '', {
         type: 'basic',
         title: title || 'Yapee',
         message: message || '',
         iconUrl: './images/icon.png',
+        buttons: options.buttons || [],
     });
 }
 
@@ -103,20 +104,60 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     return handleAddPackage(msg, sendResponse);
 });
 
-// --- Notification on complete ---
+// --- Notification on complete + Badge ---
 
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== 'checkDownloads') return;
     pullStoredData(() => {
         getStatusDownloads((downloads) => {
+            const currentCount = downloads.length;
+
+            // Badge: captcha warning takes priority, then download count
+            isCaptchaWaiting((hasCaptcha) => {
+                if (hasCaptcha) {
+                    chrome.action.setBadgeText({ text: '!' });
+                    chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
+                } else if (currentCount > 0) {
+                    chrome.action.setBadgeText({ text: String(currentCount) });
+                    chrome.action.setBadgeBackgroundColor({ color: '#0d6efd' });
+                } else {
+                    chrome.action.setBadgeText({ text: '' });
+                }
+            });
+
+            // Notification on complete
             chrome.storage.session.get(['lastDownloadCount'], (data) => {
                 const lastCount = data.lastDownloadCount || 0;
-                const currentCount = downloads.length;
                 if (lastCount > 0 && currentCount === 0) {
-                    notify('Yapee', chrome.i18n.getMessage('bgDownloadsComplete'));
+                    notify('Yapee', chrome.i18n.getMessage('bgDownloadsComplete'), {
+                        id: 'downloadsComplete',
+                        buttons: [{ title: chrome.i18n.getMessage('bgClearFinished') || 'Clear finished' }]
+                    });
                 }
                 chrome.storage.session.set({ lastDownloadCount: currentCount });
             });
         });
     });
+});
+
+// --- Notification button handler ---
+
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+    if (notificationId === 'downloadsComplete' && buttonIndex === 0) {
+        pullStoredData(() => {
+            deleteFinished(() => {
+                chrome.notifications.clear(notificationId);
+            });
+        });
+    }
+});
+
+// --- Keyboard shortcuts ---
+
+chrome.commands.onCommand.addListener((command) => {
+    if (command === 'toggle-pause') {
+        pullStoredData(() => {
+            togglePause(() => {});
+        });
+    }
 });

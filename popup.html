@@ -13,6 +13,7 @@
   <div class="d-flex align-items-center" style="margin-bottom: 8px">
     <div class="font-weight-bold" data-i18n="popupCurrentDownloads">Current Downloads</div>
     <div id="totalSpeed" class="font-weight-bold" style="margin-left: 4px"></div>
+    <span id="queueEta" class="text-muted small" style="margin-left: 4px"></span>
     <select id="serverSelect" class="form-select form-select-sm ms-2" style="width: auto; font-size: 11px; padding: 1px 20px 1px 6px; height: auto" hidden></select>
     <div class="ms-auto">
       <button id="pauseButton" class="btn" disabled data-i18n-aria="ariaPause" aria-label="Pause downloads">
@@ -21,6 +22,11 @@
       <button id="limitSpeedButton" class="btn" disabled data-i18n-aria="ariaSpeedLimit" aria-label="Toggle speed limit">
         <i class="fa fa-infinity small"></i>
       </button>
+      <input type="number" id="maxSpeedInput" class="form-control form-control-sm"
+        style="width: 70px; display: inline-block; font-size: 11px; padding: 1px 4px; height: 24px; vertical-align: middle"
+        min="0" step="50" hidden
+        data-i18n-title="ariaMaxSpeed" title="Max speed (KB/s)"
+        data-i18n-placeholder="popupMaxSpeedPlaceholder" placeholder="KB/s">
       <button id="proxyButton" class="btn" disabled data-i18n-aria="ariaProxy" aria-label="Toggle proxy">
         <i class="fa fa-exchange-alt small"></i>
       </button>

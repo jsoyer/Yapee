@@ -103,6 +103,20 @@ export async function setLimitSpeedStatus(limitSpeed, callback) {
     );
 }
 
+export async function getMaxSpeed(callback) {
+    apiFetch('/api/getConfigValue?category="download"&option="max_speed"',
+        async res => { callback(parseInt(await res.json(), 10) || 0); },
+        () => callback(0)
+    );
+}
+
+export async function setMaxSpeed(speed, callback) {
+    apiFetch(`/api/setConfigValue?category="download"&option="max_speed"&value="${speed}"`,
+        async res => { callback(await res.json()); },
+        () => callback(false)
+    );
+}
+
 export async function addPackage(name, url, callback) {
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
     apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`,

@@ -1,6 +1,6 @@
 import { pullStoredData, origin, servers, activeServerId, setActiveServer, getStats, incrementStat } from './js/storage.js';
 import {
-    isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus,
+    isLoggedIn, getStatusDownloads, getLimitSpeedStatus, setLimitSpeedStatus, getMaxSpeed, setMaxSpeed,
     addPackage, checkURL, getQueueData,
     togglePause, freeSpace, deleteFinished, restartFailed, stopAllDownloads,
     stopDownload, restartFile, restartPackage, deletePackage, getCollectorData, pushToQueue,
@@ -64,6 +64,8 @@ let serverVersionDiv = document.getElementById('serverVersionDiv');
 let serverSelect = document.getElementById('serverSelect');
 let searchInput = document.getElementById('searchInput');
 let statsDiv = document.getElementById('statsDiv');
+let queueEtaSpan = document.getElementById('queueEta');
+let maxSpeedInput = document.getElementById('maxSpeedInput');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
@@ -82,6 +84,26 @@ function formatBytes(bytes) {
     return `${(bytes / 1e3).toFixed(0)} KB`;
 }
 
+function parseEtaSeconds(eta) {
+    if (!eta || eta === '00:00:00') return 0;
+    const parts = eta.split(':');
+    if (parts.length !== 3) return 0;
+    return (parseInt(parts[0], 10) || 0) * 3600
+         + (parseInt(parts[1], 10) || 0) * 60
+         + (parseInt(parts[2], 10) || 0);
+}
+
+function formatEta(totalSeconds) {
+    if (!totalSeconds || !isFinite(totalSeconds) || totalSeconds <= 0) return '';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    let label;
+    if (hours > 0) label = `${hours}h${String(minutes).padStart(2, '0')}`;
+    else if (minutes > 0) label = `${minutes}min`;
+    else label = '<1min';
+    return msg('popupQueueEta', [label]);
+}
+
 function updatePauseButton(paused) {
     isPaused = !!paused;
     pauseIcon.className = isPaused ? 'fa fa-play small' : 'fa fa-pause small';
@@ -95,6 +117,14 @@ function updateLimitSpeedStatus() {
         limitSpeedStatus = status;
         limitSpeedButton.style.color = limitSpeedStatus ? '' : 'var(--bs-primary)';
         limitSpeedButton.disabled = false;
+        if (limitSpeedStatus) {
+            maxSpeedInput.hidden = false;
+            getMaxSpeed(function(speed) {
+                maxSpeedInput.value = speed > 0 ? speed : '';
+            });
+        } else {
+            maxSpeedInput.hidden = true;
+        }
     });
 }
 
@@ -295,6 +325,15 @@ function updateStatusDownloads() {
         totalSpeedDiv.textContent = totalSpeed > 0
             ? `- ${(totalSpeed / (1000 * 1000)).toFixed(2)} MB/s`
             : '';
+
+        // Global queue ETA: max of all individual ETAs
+        let maxEta = 0;
+        status.forEach(function(download) {
+            const s = parseEtaSeconds(download.format_eta);
+            if (s > maxEta) maxEta = s;
+        });
+        queueEtaSpan.textContent = totalSpeed > 0 ? formatEta(maxEta) : '';
+
         actionButtons.hidden = false;
         updateCaptchaAlert();
     });
@@ -584,6 +623,12 @@ limitSpeedButton.onclick = function() {
     limitSpeedStatus = !limitSpeedStatus;
     limitSpeedButton.disabled = true;
     setLimitSpeedStatus(limitSpeedStatus, () => updateLimitSpeedStatus());
+};
+
+maxSpeedInput.onchange = function() {
+    const val = parseInt(maxSpeedInput.value, 10);
+    if (isNaN(val) || val < 0) return;
+    setMaxSpeed(val, function() {});
 };
 
 proxyButton.onclick = function() {
