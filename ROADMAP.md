@@ -1,4 +1,4 @@
-# Yape — Roadmap
+# Yapee — Roadmap
 
 Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0 baseline).
 
