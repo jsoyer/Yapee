@@ -30,15 +30,15 @@ Features identified via PyLoad 0.5.0 API analysis and code quality audit (v2.1.0
 
 Quick wins from codebase audit. No new features, just making everything tighter.
 
-- [ ] **Speed input validation** — reject negative values, clamp to 0–100000 KB/s
-- [ ] **Captcha timeout warning** — visual countdown when captcha is pending, alert after 2min idle
-- [ ] **Dynamic theme switching** — `matchMedia` listener so dark↔light updates without reload
-- [ ] **Parallel multi-URL submission** — `Promise.all` instead of sequential `addPackage` calls
-- [ ] **Container upload size guard** — client-side file size limit (e.g. 10 MB) before upload
-- [ ] **Account verify button** — "Test" button in options to validate hoster credentials
-- [ ] **Log viewer upgrade** — log level filter (debug/info/warn/error), search, pagination with offset
-- [ ] **Progress notification multi-download** — show top 3 active downloads, not just 1
-- [ ] **Chrome Web Store listing update** — sync listing copy with v3.7.0 features (currently frozen at v3.3.0)
+- [x] **Speed input validation** — reject negative values, clamp to 0–100000 KB/s
+- [x] **Captcha timeout warning** — visual countdown when captcha is pending, alert after 2min idle
+- [x] **Dynamic theme switching** — `matchMedia` listener so dark↔light updates without reload
+- [x] **Parallel multi-URL submission** — `Promise.all` instead of sequential `addPackage` calls
+- [x] **Container upload size guard** — client-side file size limit (10 MB) before upload
+- [x] **Account verify button** — "Test" button in options to validate hoster credentials
+- [x] **Log viewer upgrade** — log level filter (DEBUG/INFO/WARNING/ERROR/CRITICAL), search, pagination
+- [x] **Progress notification multi-download** — show top 3 active downloads, not just 1
+- [ ] **Chrome Web Store listing update** — sync listing copy with v3.8.0 features (currently frozen at v3.3.0)
 
 ---
 

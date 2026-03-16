@@ -24,7 +24,7 @@
       </button>
       <input type="number" id="maxSpeedInput" class="form-control form-control-sm"
         style="width: 70px; display: inline-block; font-size: 11px; padding: 1px 4px; height: 24px; vertical-align: middle"
-        min="0" step="50" hidden
+        min="0" max="100000" step="50" hidden
         data-i18n-title="ariaMaxSpeed" title="Max speed (KB/s)"
         data-i18n-placeholder="popupMaxSpeedPlaceholder" placeholder="KB/s">
       <button id="proxyButton" class="btn" disabled data-i18n-aria="ariaProxy" aria-label="Toggle proxy">
@@ -67,6 +67,7 @@
       <input type="text" id="captchaInput" class="form-control form-control-sm" data-i18n-placeholder="popupTypeAnswer" placeholder="Type answer...">
       <button id="captchaSubmit" class="btn btn-sm btn-warning">OK</button>
     </div>
+    <div id="captchaTimer" class="small text-warning"></div>
   </div>
 
   <div id="status">

@@ -325,8 +325,8 @@ export async function setCaptchaResult(tid, result, callback) {
     );
 }
 
-export async function getAccounts(callback) {
-    apiFetch('/api/getAccounts?refresh=false',
+export async function getAccounts(callback, refresh = false) {
+    apiFetch(`/api/getAccounts?refresh=${refresh}`,
         async res => { callback(await res.json()); },
         () => callback({})
     );

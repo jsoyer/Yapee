@@ -680,5 +680,40 @@
   "popupAddToCollector": {
     "message": "Add to collector",
     "description": "Multi-URL button when on collector tab"
+  },
+  "popupFileTooLarge": {
+    "message": "File too large (max 10 MB)",
+    "description": "Container upload file size validation error"
+  },
+  "popupCaptchaTimeout": {
+    "message": "Captcha pending for $1 — solve it to continue downloads",
+    "description": "Captcha timeout warning",
+    "placeholders": {
+      "1": { "content": "$1", "example": "2min" }
+    }
+  },
+  "optionsTestAccount": {
+    "message": "Test",
+    "description": "Test account button"
+  },
+  "optionsAccountValid": {
+    "message": "Account is valid",
+    "description": "Account test success"
+  },
+  "optionsAccountInvalid": {
+    "message": "Account is invalid or expired",
+    "description": "Account test failure"
+  },
+  "optionsLogSearch": {
+    "message": "Search logs...",
+    "description": "Log search input placeholder"
+  },
+  "optionsLogPrev": {
+    "message": "Newer",
+    "description": "Log pagination newer button"
+  },
+  "optionsLogNext": {
+    "message": "Older",
+    "description": "Log pagination older button"
   }
 }

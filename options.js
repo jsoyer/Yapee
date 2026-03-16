@@ -362,6 +362,33 @@ function renderAccounts(accounts) {
         label.className = 'flex-grow-1';
         label.textContent = `${acc.plugin} — ${acc.login}`;
 
+        const testBtn = document.createElement('button');
+        testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+        testBtn.textContent = msg('optionsTestAccount');
+        testBtn.onclick = function() {
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            getAccounts(function(refreshed) {
+                testBtn.disabled = false;
+                testBtn.textContent = msg('optionsTestAccount');
+                const list = refreshed[acc.plugin] || [];
+                const found = list.find(function(a) { return a.login === acc.login; });
+                if (found && found.valid) {
+                    badge.className = 'badge bg-success';
+                    badge.textContent = msg('optionsValid');
+                    accountSuccess.textContent = msg('optionsAccountValid');
+                    accountSuccess.hidden = false;
+                    accountFeedback.hidden = true;
+                } else {
+                    badge.className = 'badge bg-danger';
+                    badge.textContent = msg('optionsInvalid');
+                    accountFeedback.textContent = msg('optionsAccountInvalid');
+                    accountFeedback.hidden = false;
+                    accountSuccess.hidden = true;
+                }
+            }, true);
+        };
+
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
         removeBtn.textContent = msg('optionsRemove');
@@ -373,6 +400,7 @@ function renderAccounts(accounts) {
 
         row.appendChild(badge);
         row.appendChild(label);
+        row.appendChild(testBtn);
         row.appendChild(removeBtn);
         accountsDiv.appendChild(row);
     });
@@ -419,20 +447,60 @@ addAccountButton.onclick = function() {
 
 let loadLogButton = document.getElementById('loadLogButton');
 let logOutput = document.getElementById('logOutput');
+let logControls = document.getElementById('logControls');
+let logSearchInput = document.getElementById('logSearchInput');
+let logLevelFilter = document.getElementById('logLevelFilter');
+let logPagination = document.getElementById('logPagination');
+let logPrevBtn = document.getElementById('logPrevBtn');
+let logNextBtn = document.getElementById('logNextBtn');
+let logPageInfo = document.getElementById('logPageInfo');
+
+let logAllLines = [];
+let logPageSize = 100;
+let logCurrentPage = 0;
+
+function filterLogLines() {
+    const search = logSearchInput.value.toLowerCase();
+    const level = logLevelFilter.value;
+    return logAllLines.filter(function(line) {
+        if (level && !line.toUpperCase().includes(level)) return false;
+        if (search && !line.toLowerCase().includes(search)) return false;
+        return true;
+    });
+}
+
+function renderLogPage() {
+    const filtered = filterLogLines();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / logPageSize));
+    logCurrentPage = Math.min(logCurrentPage, totalPages - 1);
+    const start = logCurrentPage * logPageSize;
+    const pageLines = filtered.slice(start, start + logPageSize);
+
+    logOutput.textContent = pageLines.length ? pageLines.join('\n') : msg('optionsLogEmpty');
+    logOutput.hidden = false;
+    logOutput.scrollTop = logOutput.scrollHeight;
+
+    logPrevBtn.disabled = logCurrentPage === 0;
+    logNextBtn.disabled = logCurrentPage >= totalPages - 1;
+    logPageInfo.textContent = `${logCurrentPage + 1} / ${totalPages}`;
+    logPagination.hidden = totalPages <= 1;
+}
 
 loadLogButton.onclick = function() {
     loadLogButton.disabled = true;
     getLog(0, function(lines) {
         loadLogButton.disabled = false;
-        if (!lines || !lines.length) {
-            logOutput.textContent = msg('optionsLogEmpty');
-        } else {
-            logOutput.textContent = lines.join('\n');
-        }
-        logOutput.hidden = false;
-        logOutput.scrollTop = logOutput.scrollHeight;
+        logAllLines = lines || [];
+        logCurrentPage = 0;
+        logControls.hidden = false;
+        renderLogPage();
     });
 };
+
+logSearchInput.oninput = function() { logCurrentPage = 0; renderLogPage(); };
+logLevelFilter.onchange = function() { logCurrentPage = 0; renderLogPage(); };
+logPrevBtn.onclick = function() { if (logCurrentPage > 0) { logCurrentPage--; renderLogPage(); } };
+logNextBtn.onclick = function() { logCurrentPage++; renderLogPage(); };
 
 let autoRetryToggle = document.getElementById('autoRetryToggle');
 autoRetryToggle.onchange = function() {

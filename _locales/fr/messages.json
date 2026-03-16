@@ -467,5 +467,29 @@
   },
   "popupAddToCollector": {
     "message": "Ajouter au collecteur"
+  },
+  "popupFileTooLarge": {
+    "message": "Fichier trop volumineux (max 10 Mo)"
+  },
+  "popupCaptchaTimeout": {
+    "message": "Captcha en attente depuis $1 — résolvez-le pour continuer"
+  },
+  "optionsTestAccount": {
+    "message": "Tester"
+  },
+  "optionsAccountValid": {
+    "message": "Le compte est valide"
+  },
+  "optionsAccountInvalid": {
+    "message": "Le compte est invalide ou expiré"
+  },
+  "optionsLogSearch": {
+    "message": "Rechercher dans les logs..."
+  },
+  "optionsLogPrev": {
+    "message": "Plus récent"
+  },
+  "optionsLogNext": {
+    "message": "Plus ancien"
   }
 }

@@ -323,20 +323,25 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             });
                         }
 
-                        // Feature 4: Progress notification for top active download
+                        // Feature 4: Progress notification for top 3 active downloads
                         if (currentCount > 0) {
-                            const top = downloads.reduce((a, b) => (b.speed > a.speed ? b : a), downloads[0]);
-                            const pct = Math.min(100, Math.max(0, Math.round(parseFloat(top.percent) || 0)));
-                            const speedStr = top.speed > 0 ? `${(top.speed / (1000 * 1000)).toFixed(1)} MB/s` : '';
-                            const message = speedStr ? `${top.name} — ${speedStr}` : top.name;
-                            chrome.notifications.update('downloadProgress', { progress: pct, message }, (updated) => {
+                            const sorted = downloads.slice().sort((a, b) => (b.speed || 0) - (a.speed || 0));
+                            const top3 = sorted.slice(0, 3);
+                            const lines = top3.map(d => {
+                                const pct = Math.min(100, Math.max(0, Math.round(parseFloat(d.percent) || 0)));
+                                const speedStr = d.speed > 0 ? ` ${(d.speed / (1000 * 1000)).toFixed(1)} MB/s` : '';
+                                return `${d.name} — ${pct}%${speedStr}`;
+                            });
+                            const message = lines.join('\n');
+                            const topPct = Math.min(100, Math.max(0, Math.round(parseFloat(top3[0].percent) || 0)));
+                            chrome.notifications.update('downloadProgress', { progress: topPct, message }, (updated) => {
                                 if (!updated) {
                                     chrome.notifications.create('downloadProgress', {
                                         type: 'progress',
                                         title: 'Yapee',
                                         message,
                                         iconUrl: './images/icon.png',
-                                        progress: pct
+                                        progress: topPct
                                     });
                                 }
                             });

@@ -88,6 +88,8 @@ let searchTerm = '';
 let dragSrcIndex = null;
 let selectedPids = new Set();
 let statusFilterValue = '';
+let captchaSeenAt = null;
+let captchaTimerInterval = null;
 const eventUuid = crypto.randomUUID();
 
 function formatBytes(bytes) {
@@ -149,6 +151,14 @@ function updateProxyStatus() {
     });
 }
 
+function formatCaptchaElapsed(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    if (totalSec < 60) return `${totalSec}s`;
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${min}min${sec > 0 ? String(sec).padStart(2, '0') : ''}`;
+}
+
 function updateCaptchaAlert() {
     getCaptchaTask(function(task) {
         currentCaptchaTask = task;
@@ -157,13 +167,27 @@ function updateCaptchaAlert() {
             captchaImage.hidden = true;
             captchaForm.hidden = true;
             captchaInput.value = '';
+            captchaSeenAt = null;
+            if (captchaTimerInterval) { clearInterval(captchaTimerInterval); captchaTimerInterval = null; }
             return;
         }
         captchaAlert.hidden = false;
+        if (!captchaSeenAt) captchaSeenAt = Date.now();
         if (task.src) {
             captchaImage.src = task.src;
             captchaImage.hidden = false;
             captchaForm.hidden = false;
+        }
+        // Start timer to show elapsed time
+        if (!captchaTimerInterval) {
+            const timerSpan = document.getElementById('captchaTimer');
+            captchaTimerInterval = setInterval(function() {
+                if (!captchaSeenAt) return;
+                const elapsed = Date.now() - captchaSeenAt;
+                if (timerSpan) timerSpan.textContent = elapsed >= 30000 ? msg('popupCaptchaTimeout', [formatCaptchaElapsed(elapsed)]) : '';
+                if (elapsed >= 120000) timerSpan.className = 'small text-danger fw-bold';
+                else timerSpan.className = 'small text-warning';
+            }, 1000);
         }
     });
 }
@@ -853,8 +877,10 @@ limitSpeedButton.onclick = function() {
 };
 
 maxSpeedInput.onchange = function() {
-    const val = parseInt(maxSpeedInput.value, 10);
-    if (isNaN(val) || val < 0) return;
+    let val = parseInt(maxSpeedInput.value, 10);
+    if (isNaN(val)) return;
+    val = Math.max(0, Math.min(val, 100000));
+    maxSpeedInput.value = val || '';
     setMaxSpeed(val, function() {});
 };
 
@@ -975,18 +1001,16 @@ multiUrlButton.onclick = function() {
         return;
     }
 
-    // No name: one package per URL with auto-generated name
-    let done = 0;
-    let errors = 0;
-    lines.forEach(function(url) {
-        const name = nameFromUrl(url);
-        addPackage(name, url, function(success) {
-            done++;
-            if (!success) errors++;
-            if (done === lines.length) {
-                onComplete(errors === 0, errors);
-            }
-        }, dest);
+    // No name: one package per URL with auto-generated name (parallel)
+    const promises = lines.map(function(url) {
+        return new Promise(function(resolve) {
+            const name = nameFromUrl(url);
+            addPackage(name, url, function(success) { resolve(success); }, dest);
+        });
+    });
+    Promise.all(promises).then(function(results) {
+        const errors = results.filter(function(s) { return !s; }).length;
+        onComplete(errors === 0, errors);
     });
 };
 
@@ -996,6 +1020,10 @@ containerUploadButton.onclick = function() {
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['dlc', 'ccf', 'rsdf'].includes(ext)) {
         setErrorMessage(msg('popupInvalidFileType'));
+        return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        setErrorMessage(msg('popupFileTooLarge'));
         return;
     }
     setButtonLoading(containerUploadButton, true);

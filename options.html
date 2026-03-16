@@ -122,7 +122,23 @@
           <h5 class="mb-0" data-i18n="optionsServerLog">Server Log</h5>
           <button id="loadLogButton" class="btn btn-sm btn-outline-secondary ms-auto" data-i18n="optionsLoadLog">Load</button>
         </div>
-        <pre id="logOutput" class="border rounded p-2 small" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all" hidden></pre>
+        <div class="d-flex gap-1 mb-2" id="logControls" hidden>
+          <input type="text" id="logSearchInput" class="form-control form-control-sm flex-grow-1" data-i18n-placeholder="optionsLogSearch" placeholder="Search logs...">
+          <select id="logLevelFilter" class="form-select form-select-sm" style="width: auto; font-size: 11px">
+            <option value="">All levels</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO">INFO</option>
+            <option value="WARNING">WARNING</option>
+            <option value="ERROR">ERROR</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
+        </div>
+        <pre id="logOutput" class="border rounded p-2 small" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all" hidden></pre>
+        <div class="d-flex justify-content-between mt-1" id="logPagination" hidden>
+          <button id="logPrevBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsLogPrev" disabled>Newer</button>
+          <span id="logPageInfo" class="small text-muted align-self-center"></span>
+          <button id="logNextBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsLogNext">Older</button>
+        </div>
       </div>
 
     </div>
