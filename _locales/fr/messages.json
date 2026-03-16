@@ -45,6 +45,9 @@
   "popupOneUrlPerLine": {
     "message": "Une URL par ligne"
   },
+  "popupPackageName": {
+    "message": "Nom du paquet (optionnel)"
+  },
   "popupAddAll": {
     "message": "Ajouter en file"
   },

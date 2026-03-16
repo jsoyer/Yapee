@@ -71,6 +71,7 @@ let selectAllQueue = document.getElementById('selectAllQueue');
 let batchCount = document.getElementById('batchCount');
 let batchDeleteBtn = document.getElementById('batchDeleteBtn');
 let existingPackageSelect = document.getElementById('existingPackageSelect');
+let packageNameInput = document.getElementById('packageNameInput');
 let historyTab = document.getElementById('historyTab');
 let historyDiv = document.getElementById('historyDiv');
 let statusFilter = document.getElementById('statusFilter');
@@ -971,6 +972,32 @@ multiUrlButton.onclick = function() {
 
     // Create new packages (dest=0 for collector, dest=1 for queue)
     const dest = activeView === 'collector' ? 0 : 1;
+    const customName = packageNameInput.value.trim();
+
+    function onComplete(success, errorCount) {
+        setButtonLoading(multiUrlButton, false);
+        if (success) {
+            multiUrlInput.value = '';
+            packageNameInput.value = '';
+            incrementStat('packagesAdded');
+            setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
+        } else {
+            setErrorMessage(msg('popupUrlsFailed', [String(errorCount)]));
+        }
+        if (activeView === 'collector') updateCollectorView();
+        else { updateStatusDownloads(); }
+        updateStats();
+    }
+
+    // Custom name: group all URLs into one package
+    if (customName) {
+        addPackage(customName, lines, function(success) {
+            onComplete(success, success ? 0 : lines.length);
+        }, dest);
+        return;
+    }
+
+    // No name: one package per URL with auto-generated name
     let done = 0;
     let errors = 0;
     lines.forEach(function(url) {
@@ -979,17 +1006,7 @@ multiUrlButton.onclick = function() {
             done++;
             if (!success) errors++;
             if (done === lines.length) {
-                setButtonLoading(multiUrlButton, false);
-                if (errors === 0) {
-                    multiUrlInput.value = '';
-                    incrementStat('packagesAdded');
-                    setSuccessMessage(msg('popupUrlsAdded', [String(lines.length)]));
-                } else {
-                    setErrorMessage(msg('popupUrlsFailed', [String(errors)]));
-                }
-                if (activeView === 'collector') updateCollectorView();
-                else { updateStatusDownloads(); }
-                updateStats();
+                onComplete(errors === 0, errors);
             }
         }, dest);
     });

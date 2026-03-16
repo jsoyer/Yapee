@@ -117,9 +117,11 @@ export async function setMaxSpeed(speed, callback) {
     );
 }
 
-export async function addPackage(name, url, callback, dest = 1) {
+export async function addPackage(name, urls, callback, dest = 1) {
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
-    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]&dest=${dest}`,
+    const linksArray = Array.isArray(urls) ? urls : [urls];
+    const linksParam = '[' + linksArray.map(u => `"${encodeURIComponent(u)}"`).join(',') + ']';
+    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=${linksParam}&dest=${dest}`,
         async res => {
             const response = await res.json();
             if (Object.hasOwn(response, 'error')) {

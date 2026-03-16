@@ -60,6 +60,10 @@
     "message": "One URL per line",
     "description": "Multi-URL textarea placeholder"
   },
+  "popupPackageName": {
+    "message": "Package name (optional)",
+    "description": "Package name input placeholder"
+  },
   "popupAddAll": {
     "message": "Add to queue",
     "description": "Multi-URL submit button"
