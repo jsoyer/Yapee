@@ -797,7 +797,7 @@ function switchTab(tab) {
     statusFilter.hidden = tab !== 'downloads';
     actionButtons.hidden = (tab !== 'downloads');
     multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
-    containerUploadDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
+    containerUploadDiv.hidden = (tab !== 'collector');
     pageDownloadDiv.hidden = (tab !== 'downloads');
     existingPackageSelect.hidden = (tab === 'collector') || (tab === 'history');
     multiUrlButton.textContent = (tab === 'collector') ? msg('popupAddToCollector') : msg('popupAddAll');
@@ -1070,7 +1070,6 @@ pullStoredData(function() {
         updateStats();
         viewTabs.hidden = false;
         multiUrlDiv.hidden = false;
-        containerUploadDiv.hidden = false;
         filterBar.hidden = false;
 
         if (servers.length > 1) {
