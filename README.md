@@ -2,7 +2,10 @@
 
 A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads. Available for Chrome, Chromium, Edge, and Firefox.
 
-**Current version:** 3.3.0 — Manifest V3 with real-time event streaming, dark mode, internationalization, and full Firefox support.
+**Current version:** 3.6.0 — Analytics, download history, smart retry, and advanced filters.
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/jsoyer)
+[![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jsoyer)
 
 ---
 
@@ -185,6 +188,15 @@ See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
 ## Acknowledgments
 
 Yapee was originally created by [Remi Rigal](https://github.com/RemiRigal). This project has since been extensively rewritten with 15+ major features, a complete architecture overhaul, and full Firefox support. Thank you Remi for the foundation and for your work on the original extension.
+
+---
+
+## Support
+
+Yapee is free, open-source, and built without ads or tracking. If you find it useful, you can support development:
+
+- [GitHub Sponsors](https://github.com/sponsors/jsoyer)
+- [Ko-fi](https://ko-fi.com/jsoyer)
 
 ---
 
