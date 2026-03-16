@@ -461,5 +461,8 @@
   },
   "bgAutoRetried": {
     "message": "Relance auto : $1"
+  },
+  "popupAddToCollector": {
+    "message": "Ajouter au collecteur"
   }
 }

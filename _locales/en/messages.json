@@ -672,5 +672,9 @@
     "placeholders": {
       "1": { "content": "$1", "example": "file.zip" }
     }
+  },
+  "popupAddToCollector": {
+    "message": "Add to collector",
+    "description": "Multi-URL button when on collector tab"
   }
 }

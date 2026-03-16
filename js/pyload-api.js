@@ -117,9 +117,9 @@ export async function setMaxSpeed(speed, callback) {
     );
 }
 
-export async function addPackage(name, url, callback) {
+export async function addPackage(name, url, callback, dest = 1) {
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
-    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]`,
+    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(url)}"]&dest=${dest}`,
         async res => {
             const response = await res.json();
             if (Object.hasOwn(response, 'error')) {

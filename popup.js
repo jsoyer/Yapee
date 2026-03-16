@@ -361,7 +361,7 @@ function updateStatusDownloads() {
         });
         queueEtaSpan.textContent = totalSpeed > 0 ? formatEta(maxEta) : '';
 
-        actionButtons.hidden = false;
+        if (activeView === 'downloads') actionButtons.hidden = false;
         updateCaptchaAlert();
     });
 }
@@ -795,9 +795,11 @@ function switchTab(tab) {
     statsDashboard.hidden = tab !== 'history';
     statusFilter.hidden = tab !== 'downloads';
     actionButtons.hidden = (tab !== 'downloads');
-    multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'queue');
-    containerUploadDiv.hidden = (tab !== 'downloads');
+    multiUrlDiv.hidden = (tab !== 'downloads' && tab !== 'queue' && tab !== 'collector');
+    containerUploadDiv.hidden = (tab !== 'downloads' && tab !== 'collector');
     pageDownloadDiv.hidden = (tab !== 'downloads');
+    existingPackageSelect.hidden = (tab === 'collector') || (tab === 'history');
+    multiUrlButton.textContent = (tab === 'collector') ? msg('popupAddToCollector') : msg('popupAddAll');
     if (tab !== 'queue') { selectedPids.clear(); }
 
     if (tab === 'downloads') {
@@ -808,6 +810,7 @@ function switchTab(tab) {
         startEventLoop();
     } else if (tab === 'collector') {
         updateCollectorView();
+        startEventLoop();
     } else if (tab === 'history') {
         updateHistoryView();
         updateStatsDashboard();
@@ -966,7 +969,8 @@ multiUrlButton.onclick = function() {
         return;
     }
 
-    // Create new packages (existing behavior)
+    // Create new packages (dest=0 for collector, dest=1 for queue)
+    const dest = activeView === 'collector' ? 0 : 1;
     let done = 0;
     let errors = 0;
     lines.forEach(function(url) {
@@ -983,10 +987,11 @@ multiUrlButton.onclick = function() {
                 } else {
                     setErrorMessage(msg('popupUrlsFailed', [String(errors)]));
                 }
-                updateStatusDownloads();
+                if (activeView === 'collector') updateCollectorView();
+                else { updateStatusDownloads(); }
                 updateStats();
             }
-        });
+        }, dest);
     });
 };
 
@@ -1082,6 +1087,7 @@ pullStoredData(function() {
             checkURL(url, function(success) {
                 if (!success) return;
                 getQueueData(function(urls) {
+                    if (activeView !== 'downloads') return;
                     pageDownloadDiv.hidden = false;
                     if (urls.includes(url)) {
                         setErrorMessage(msg('popupAlreadyInQueue'));
