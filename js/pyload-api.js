@@ -121,7 +121,8 @@ export async function addPackage(name, urls, callback, dest = 1) {
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
     const linksArray = Array.isArray(urls) ? urls : [urls];
     const linksParam = '[' + linksArray.map(u => `"${encodeURIComponent(u)}"`).join(',') + ']';
-    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=${linksParam}&dest=${dest}`,
+    const destParam = dest !== 1 ? `&dest=${dest}` : '';
+    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=${linksParam}${destParam}`,
         async res => {
             const response = await res.json();
             if (Object.hasOwn(response, 'error')) {
@@ -353,42 +354,26 @@ export async function getLog(offset, callback) {
 }
 
 export async function uploadContainer(file, callback) {
-    // PyLoad 0.5.0's /api/uploadContainer has a Python 3 bytes/str bug.
-    // Use the web UI's /json/add_package with CSRF token instead.
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
-        const pageRes = await fetch(`${origin}/`, {
-            headers: getAuthHeaders(),
-            signal: controller.signal,
-            credentials: 'include'
-        });
-        const html = await pageRes.text();
-        const match = html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/);
-        if (!match) {
-            clearTimeout(timeoutId);
-            callback(false, 'CSRF token not found');
-            return;
-        }
+        // Try the direct API endpoint with Basic Auth
         const formData = new FormData();
-        formData.append('add_name', file.name.replace(/\.[^.]+$/, ''));
-        formData.append('add_file', file, file.name);
-        formData.append('add_dest', '1');
-        formData.append('add_links', '');
-        formData.append('add_password', '');
-        const res = await fetch(`${origin}/json/add_package`, {
+        formData.append('filename', file.name);
+        formData.append('data', file, file.name);
+        const res = await fetch(`${origin}/api/uploadContainer`, {
             method: 'POST',
-            headers: { ...getAuthHeaders(), 'X-CSRFToken': match[1] },
+            headers: getAuthHeaders(),
             body: formData,
             signal: controller.signal,
-            credentials: 'include'
+            credentials: 'omit'
         });
         clearTimeout(timeoutId);
-        if (res.ok) {
+        if (res.ok && !res.redirected) {
             callback(true);
         } else {
             const text = await res.text().catch(() => 'Server error');
-            callback(false, text);
+            callback(false, text || `HTTP ${res.status}`);
         }
     } catch {
         clearTimeout(timeoutId);
