@@ -2,7 +2,7 @@
 
 A powerful, privacy-first browser extension for managing [PyLoad](https://pyload.net) downloads — the spiritual successor to [Yape](https://github.com/RemiRigal/Yape), completely rewritten with Manifest V3. Available for Chrome, Chromium, Edge, and Firefox.
 
-**Current version:** 3.8.0 — Hardening & quality of life (speed validation, captcha timer, parallel submissions, log viewer upgrade).
+**Current version:** 3.8.1 — Language selector, store listing refresh, documentation update.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?logo=github)](https://github.com/sponsors/jsoyer)
 [![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/jsoyer)
@@ -26,7 +26,7 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 **User Interface**
 - Dark mode with dynamic system theme detection (updates without reload)
 - Chrome Side Panel and Firefox Sidebar for persistent monitoring
-- Internationalization: English and French
+- Internationalization: English and French, with manual language override in Options
 - Search and filter across downloads, queue, and collector
 - Download history (last 1,000 entries) with search and status filter
 - Mini-stats dashboard: per-hoster breakdown, peak speed, failure rate
@@ -59,7 +59,7 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 
 ### Chrome / Chromium / Edge
 
-1. [Download the latest release](https://github.com/jsoyer/Yapee/releases/latest) and unzip, or clone the repository
+1. [Download the latest Chrome release](https://github.com/jsoyer/Yapee/releases/latest) (`yapee-chrome-*.zip`) and unzip, or clone the repository
 2. Go to `chrome://extensions`
 3. Enable **Developer mode** (toggle in the top-right corner)
 4. Click **Load unpacked** and select the extension folder
@@ -67,11 +67,10 @@ A powerful, privacy-first browser extension for managing [PyLoad](https://pyload
 
 ### Firefox
 
-1. Clone or download the repository
-2. Copy `manifest.firefox.json` over `manifest.json` (or rename the original)
-3. Go to `about:debugging#/runtime/this-firefox`
-4. Click **Load Temporary Add-on** and select `manifest.json`
-5. Click the Yapee icon in your toolbar, then click the gear icon to configure
+1. [Download the latest Firefox release](https://github.com/jsoyer/Yapee/releases/latest) (`yapee-firefox-*.zip`) and unzip, or clone the repository and copy `manifest.firefox.json` over `manifest.json`
+2. Go to `about:debugging#/runtime/this-firefox`
+3. Click **Load Temporary Add-on** and select `manifest.json`
+4. Click the Yapee icon in your toolbar, then click the gear icon to configure
 
 ---
 
@@ -157,7 +156,9 @@ Found a bug or have a feature request? [Open an issue](https://github.com/jsoyer
 
 ### Translating to a New Language
 
-Yapee uses Chrome's `chrome.i18n` API with a modular structure:
+Yapee supports auto-detection (browser language) and manual override (Options → Language selector).
+
+Translations are stored in `_locales/`:
 
 ```
 _locales/
@@ -170,10 +171,11 @@ To add a new language:
 1. Create `_locales/<code>/messages.json` (e.g., `de` for German, `es` for Spanish)
 2. Copy `_locales/en/messages.json` as a template
 3. Translate all `"message"` values — keep all keys and `"placeholders"` unchanged
-4. Test the translation in your browser
-5. Submit a pull request
+4. Add the new locale as an `<option>` in `options.html` (language selector)
+5. Test the translation in your browser
+6. Submit a pull request
 
-HTML elements use `data-i18n` attributes for automatic translation. JavaScript code uses the `msg()` helper from `js/i18n.js`.
+HTML elements use `data-i18n` attributes for automatic translation. JavaScript code uses the `msg()` helper from `js/i18n.js`. When a manual locale is set, messages are loaded from the JSON file at runtime; otherwise `chrome.i18n.getMessage()` handles browser auto-detection.
 
 ---
 
@@ -182,9 +184,9 @@ HTML elements use `data-i18n` attributes for automatic translation. JavaScript c
 - **Manifest V3** with service worker background script
 - **Content script relay** for Tampermonkey communication
 - **AES-GCM 256-bit encryption** for stored credentials (WebCrypto API)
-- **Bootstrap 5** UI with Catppuccin dark mode support
+- **Bootstrap 5** UI with dynamic dark/light theme switching
 - **Event streaming** via PyLoad's real-time event API
-- **Modular i18n system** for easy translation contributions
+- **Modular i18n system** with runtime locale override (`initLocale` / `setLocale`)
 
 See [SECURITY.md](SECURITY.md) for details on encryption, CSP, and permission handling.
 See [PRIVACY.md](PRIVACY.md) for the complete data handling policy.
