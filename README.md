@@ -144,7 +144,7 @@ Yapee supports direct upload of DLC, CCF, and RSDF container files:
 | Browser | Manifest Version | Status |
 |---|---|---|
 | Chrome / Chromium / Edge | MV3 (`manifest.json`) | Fully supported |
-| Firefox >= 109 | MV3 (`manifest.firefox.json`) | Fully supported |
+| Firefox >= 128 | MV3 (`manifest.firefox.json`) | Fully supported |
 
 ---
 

@@ -44,14 +44,17 @@ function saveLoginRateLimit() {
 
 
 function enableSpinner() {
-    spinnerDiv.innerHTML = `
-        <div class="spinner-border text-primary m-3"></div>
-        <div>${msg('optionsCheckingStatus')}</div>
-    `;
+    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
+    const spinner = document.createElement('div');
+    spinner.className = 'spinner-border text-primary m-3';
+    const label = document.createElement('div');
+    label.textContent = msg('optionsCheckingStatus');
+    spinnerDiv.appendChild(spinner);
+    spinnerDiv.appendChild(label);
 }
 
 function disableSpinner() {
-    spinnerDiv.innerHTML = ``;
+    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
 }
 
 function setDangerMessage(message, timeout=3000) {

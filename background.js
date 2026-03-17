@@ -334,17 +334,20 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             });
                             const message = lines.join('\n');
                             const topPct = Math.min(100, Math.max(0, Math.round(parseFloat(top3[0].percent) || 0)));
-                            chrome.notifications.update('downloadProgress', { progress: topPct, message }, (updated) => {
-                                if (!updated) {
-                                    chrome.notifications.create('downloadProgress', {
-                                        type: 'progress',
-                                        title: 'Yapee',
-                                        message,
-                                        iconUrl: './images/icon.png',
-                                        progress: topPct
-                                    });
-                                }
-                            });
+                            const progressOpts = {
+                                type: 'progress',
+                                title: 'Yapee',
+                                message,
+                                iconUrl: './images/icon.png',
+                                progress: topPct
+                            };
+                            if (typeof chrome.notifications.update === 'function') {
+                                chrome.notifications.update('downloadProgress', { progress: topPct, message }, (updated) => {
+                                    if (!updated) chrome.notifications.create('downloadProgress', progressOpts);
+                                });
+                            } else {
+                                chrome.notifications.create('downloadProgress', progressOpts);
+                            }
                         } else {
                             chrome.notifications.clear('downloadProgress');
                         }

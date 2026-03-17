@@ -777,7 +777,19 @@ function updateStatsDashboard() {
             hosters.slice(0, 10).forEach(function([hoster, data]) {
                 const tr = document.createElement('tr');
                 const ok = data.count - data.failures;
-                tr.innerHTML = `<td class="ellipsis" style="max-width:180px">${DOMPurify.sanitize(hoster)}</td><td class="text-end">${ok}</td><td class="text-end">${data.failures}</td>`;
+                const tdName = document.createElement('td');
+                tdName.className = 'ellipsis';
+                tdName.style.maxWidth = '180px';
+                tdName.textContent = hoster;
+                const tdOk = document.createElement('td');
+                tdOk.className = 'text-end';
+                tdOk.textContent = ok;
+                const tdFail = document.createElement('td');
+                tdFail.className = 'text-end';
+                tdFail.textContent = data.failures;
+                tr.appendChild(tdName);
+                tr.appendChild(tdOk);
+                tr.appendChild(tdFail);
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
@@ -844,11 +856,16 @@ function switchTab(tab) {
 
 function setButtonLoading(btn, loading) {
     if (loading) {
-        btn.dataset.originalHtml = btn.innerHTML;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        btn.dataset.originalText = btn.textContent;
+        while (btn.firstChild) btn.removeChild(btn.firstChild);
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm';
+        spinner.setAttribute('role', 'status');
+        btn.appendChild(spinner);
         btn.disabled = true;
     } else {
-        btn.innerHTML = btn.dataset.originalHtml || '';
+        while (btn.firstChild) btn.removeChild(btn.firstChild);
+        btn.textContent = btn.dataset.originalText || '';
         btn.disabled = false;
     }
 }
