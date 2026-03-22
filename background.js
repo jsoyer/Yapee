@@ -234,7 +234,8 @@ async function processRetries(errorFids, activeFids) {
         const entry = retryQueue[fid] || { attempts: 0, nextRetry: 0, backoffMs: INITIAL_RETRY_BACKOFF, name: info.name };
         if (entry.attempts >= MAX_RETRY_ATTEMPTS) continue;
         if (Date.now() < entry.nextRetry) continue;
-        restartFile(parseInt(fid, 10));
+        const restarted = await restartFile(parseInt(fid, 10));
+        if (!restarted) continue;
         entry.attempts++;
         entry.backoffMs = Math.min(entry.backoffMs * 2, MAX_RETRY_BACKOFF);
         entry.nextRetry = Date.now() + entry.backoffMs;

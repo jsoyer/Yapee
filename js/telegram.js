@@ -58,6 +58,7 @@ export async function sendTelegramNotification(title, message, eventType) {
     if (message) parts.push(escapeHtml(message));
     const text = parts.join('\n');
 
+    if (sendQueue.length >= 50) sendQueue.shift();
     sendQueue.push({ botToken: config.botToken, chatId: config.chatId, text });
     processQueue();
 }
@@ -68,6 +69,9 @@ export async function testTelegramConfig(botToken, chatId) {
     }
     if (!/^\d+:[A-Za-z0-9_-]+$/.test(botToken)) {
         return { ok: false, error: 'Invalid bot token format' };
+    }
+    if (!/^-?\d+$/.test(chatId)) {
+        return { ok: false, error: 'Invalid chat ID format' };
     }
     try {
         const controller = new AbortController();
