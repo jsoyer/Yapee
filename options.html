@@ -24,6 +24,9 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logsPane" type="button" role="tab" data-i18n="optionsTabLogs">Logs</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notificationsPane" type="button" role="tab" data-i18n="optionsTabNotifications">Notifications</button>
+      </li>
     </ul>
     <div class="tab-content" id="optionsTabContent">
 
@@ -146,6 +149,44 @@
           <button id="logPrevBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsLogPrev" disabled>Newer</button>
           <span id="logPageInfo" class="small text-muted align-self-center"></span>
           <button id="logNextBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsLogNext">Older</button>
+        </div>
+      </div>
+
+      <div class="tab-pane fade pt-4" id="notificationsPane" role="tabpanel">
+        <h5 data-i18n="optionsTelegramTitle">Telegram Notifications</h5>
+        <p class="small text-muted" data-i18n="optionsTelegramDesc">Receive download notifications via Telegram bot.</p>
+
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="telegramEnabled">
+          <label class="form-check-label" for="telegramEnabled" data-i18n="optionsTelegramEnable">Enable Telegram notifications</label>
+        </div>
+
+        <div id="telegramConfigFields">
+          <div class="mb-3">
+            <label for="telegramBotToken" data-i18n="optionsTelegramToken">Bot Token</label>
+            <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsTelegramTokenTooltip" title="Create a bot via @BotFather on Telegram"></i>
+            <input type="password" class="form-control form-control-sm" id="telegramBotToken" placeholder="123456:ABC-DEF..." autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label for="telegramChatId" data-i18n="optionsTelegramChatId">Chat ID</label>
+            <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsTelegramChatIdTooltip" title="Send /start to your bot, then use @userinfobot to find your ID"></i>
+            <input type="text" class="form-control form-control-sm" id="telegramChatId" placeholder="e.g. 123456789">
+          </div>
+
+          <div class="border rounded p-3 mb-3">
+            <div class="fw-bold small mb-2" data-i18n="optionsTelegramEvents">Notify on</div>
+            <div class="form-check"><input type="checkbox" class="form-check-input telegram-event" id="tgEvtPackageComplete" data-event="packageComplete" checked><label class="form-check-label" for="tgEvtPackageComplete" data-i18n="optionsTelegramEvtComplete">Download complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input telegram-event" id="tgEvtAllComplete" data-event="allComplete" checked><label class="form-check-label" for="tgEvtAllComplete" data-i18n="optionsTelegramEvtAllComplete">All downloads complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input telegram-event" id="tgEvtFailed" data-event="failed" checked><label class="form-check-label" for="tgEvtFailed" data-i18n="optionsTelegramEvtFailed">Download failed</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input telegram-event" id="tgEvtCaptcha" data-event="captcha" checked><label class="form-check-label" for="tgEvtCaptcha" data-i18n="optionsTelegramEvtCaptcha">Captcha waiting</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input telegram-event" id="tgEvtAutoRetry" data-event="autoRetry"><label class="form-check-label" for="tgEvtAutoRetry" data-i18n="optionsTelegramEvtRetry">Auto-retry</label></div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button id="telegramSaveBtn" class="btn btn-sm btn-primary" data-i18n="optionsSave">Save</button>
+            <button id="telegramTestBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsTelegramTest">Test</button>
+          </div>
+          <div id="telegramFeedback" class="mt-2 small" hidden></div>
         </div>
       </div>
 

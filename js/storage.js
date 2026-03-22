@@ -291,3 +291,48 @@ export function isAutoRetryEnabled(callback) {
 export function setAutoRetryEnabled(enabled, callback) {
     chrome.storage.local.set({ autoRetryEnabled: enabled }, callback);
 }
+
+// --- Telegram Notification Config ---
+
+const TELEGRAM_DEFAULTS = {
+    enabled: false,
+    chatId: '',
+    events: {
+        packageComplete: true,
+        allComplete: true,
+        failed: true,
+        captcha: true,
+        autoRetry: false
+    }
+};
+
+export function getTelegramConfig(callback) {
+    chrome.storage.local.get(['telegramConfig'], async function(data) {
+        const raw = data.telegramConfig || {};
+        let botToken = '';
+        if (raw.botTokenEnc) {
+            const key = await getOrCreateCredKey();
+            botToken = await decryptCredential(raw.botTokenEnc, key);
+        }
+        callback({
+            botToken,
+            chatId: raw.chatId || '',
+            enabled: raw.enabled || false,
+            events: { ...TELEGRAM_DEFAULTS.events, ...raw.events }
+        });
+    });
+}
+
+export function setTelegramConfig(config, callback) {
+    getOrCreateCredKey().then(async function(key) {
+        const botTokenEnc = config.botToken ? await encryptCredential(config.botToken, key) : '';
+        chrome.storage.local.set({
+            telegramConfig: {
+                botTokenEnc,
+                chatId: config.chatId || '',
+                enabled: !!config.enabled,
+                events: { ...TELEGRAM_DEFAULTS.events, ...config.events }
+            }
+        }, callback);
+    });
+}
