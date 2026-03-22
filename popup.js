@@ -495,14 +495,14 @@ const ACCEPTED_EXTENSIONS = new Set(['dlc', 'ccf', 'rsdf', 'txt']);
 document.body.addEventListener('dragenter', function(e) {
     e.preventDefault();
     dragCounter++;
-    dropZone.hidden = false;
+    dropZone.style.display = 'flex';
 });
 
 document.body.addEventListener('dragleave', function() {
     dragCounter--;
     if (dragCounter <= 0) {
         dragCounter = 0;
-        dropZone.hidden = true;
+        dropZone.style.display = 'none';
     }
 });
 
@@ -513,7 +513,7 @@ document.body.addEventListener('dragover', function(e) {
 document.body.addEventListener('drop', async function(e) {
     e.preventDefault();
     dragCounter = 0;
-    dropZone.hidden = true;
+    dropZone.style.display = 'none';
 
     const files = Array.from(e.dataTransfer.files).filter(function(f) {
         const ext = f.name.split('.').pop().toLowerCase();
