@@ -799,5 +799,38 @@
   "optionsTelegramSaved": {
     "message": "Telegram settings saved",
     "description": "Save success feedback"
+  },
+
+  "popupNoFiles": {
+    "message": "No files",
+    "description": "Empty file list in queue package"
+  },
+  "fileStatusFinished": {
+    "message": "Finished",
+    "description": "File status badge"
+  },
+  "fileStatusDownloading": {
+    "message": "Downloading",
+    "description": "File status badge"
+  },
+  "fileStatusWaiting": {
+    "message": "Waiting",
+    "description": "File status badge"
+  },
+  "fileStatusFailed": {
+    "message": "Failed",
+    "description": "File status badge"
+  },
+  "fileStatusAborted": {
+    "message": "Aborted",
+    "description": "File status badge"
+  },
+  "fileStatusOffline": {
+    "message": "Offline",
+    "description": "File status badge"
+  },
+  "fileStatusUnknown": {
+    "message": "Unknown",
+    "description": "File status badge"
   }
 }

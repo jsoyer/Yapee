@@ -397,6 +397,98 @@ function updateStatusDownloads() {
 
 // --- Queue view with drag & drop ---
 
+function statusBadgeClass(status) {
+    switch (status) {
+        case 'finished': return 'bg-success';
+        case 'downloading': return 'bg-primary';
+        case 'waiting': case 'queued': return 'bg-secondary';
+        case 'failed': case 'offline': return 'bg-danger';
+        case 'aborted': return 'bg-warning text-dark';
+        default: return 'bg-secondary';
+    }
+}
+
+function statusLabel(status) {
+    const key = {
+        finished: 'fileStatusFinished',
+        downloading: 'fileStatusDownloading',
+        waiting: 'fileStatusWaiting',
+        queued: 'fileStatusWaiting',
+        failed: 'fileStatusFailed',
+        aborted: 'fileStatusAborted',
+        offline: 'fileStatusOffline'
+    }[status];
+    return key ? msg(key) : msg('fileStatusUnknown');
+}
+
+function buildFileList(pkg) {
+    const container = document.createElement('div');
+    container.className = 'queue-file-list';
+
+    const links = pkg.links || [];
+    if (!links.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-muted';
+        empty.style.cssText = 'padding: 4px 0 4px 28px; font-size: 11px';
+        empty.textContent = msg('popupNoFiles');
+        container.appendChild(empty);
+        return container;
+    }
+
+    links.forEach(function(link) {
+        const row = document.createElement('div');
+        row.className = 'd-flex align-items-center gap-1';
+        row.style.cssText = 'padding: 2px 0 2px 28px; font-size: 11px';
+
+        const badge = document.createElement('span');
+        const status = (link.statusmsg || link.status || 'unknown').toString().toLowerCase();
+        badge.className = 'badge ' + statusBadgeClass(status);
+        badge.textContent = statusLabel(status);
+
+        const name = document.createElement('span');
+        name.className = 'ellipsis flex-grow-1';
+        name.textContent = link.name || 'unknown';
+
+        const size = document.createElement('span');
+        size.className = 'text-muted';
+        size.style.whiteSpace = 'nowrap';
+        if (link.format_size) size.textContent = link.format_size;
+
+        row.appendChild(badge);
+        row.appendChild(name);
+        row.appendChild(size);
+
+        if (status === 'failed' || status === 'aborted' || status === 'offline') {
+            const retryBtn = document.createElement('button');
+            retryBtn.className = 'btn btn-sm btn-outline-warning py-0 px-1';
+            retryBtn.style.fontSize = '10px';
+            setIcon(retryBtn, 'fa fa-redo');
+            retryBtn.onclick = function(e) {
+                e.stopPropagation();
+                retryBtn.disabled = true;
+                restartFile(link.fid, function() { updateQueueView(); });
+            };
+            row.appendChild(retryBtn);
+        }
+
+        container.appendChild(row);
+    });
+
+    return container;
+}
+
+function toggleFileList(row, pkg, chevron) {
+    const existing = row.nextElementSibling;
+    if (existing && existing.classList.contains('queue-file-list')) {
+        existing.remove();
+        chevron.classList.remove('queue-chevron-open');
+        return;
+    }
+    chevron.classList.add('queue-chevron-open');
+    const fileList = buildFileList(pkg);
+    row.after(fileList);
+}
+
 function buildQueueItem(pkg, index, total) {
     const row = document.createElement('div');
     row.className = 'd-flex align-items-center gap-1';
@@ -442,6 +534,14 @@ function buildQueueItem(pkg, index, total) {
         updateBatchBar();
     };
     checkbox.onclick = function(e) { e.stopPropagation(); };
+
+    const chevron = document.createElement('i');
+    chevron.className = 'fa fa-chevron-right queue-chevron';
+
+    row.onclick = function(e) {
+        if (e.target.closest('button, input, .queue-name')) return;
+        toggleFileList(row, pkg, chevron);
+    };
 
     const nameDiv = document.createElement('div');
     nameDiv.className = 'ellipsis flex-grow-1 queue-name';
@@ -516,7 +616,20 @@ function buildQueueItem(pkg, index, total) {
     setIcon(retryBtn, 'fa fa-redo');
     retryBtn.onclick = function() {
         retryBtn.disabled = true;
-        restartPackage(pkg.pid, function() { updateQueueView(); });
+        restartPackage(pkg.pid, function() {
+            const aborted = (pkg.links || []).filter(function(link) {
+                const s = (link.statusmsg || link.status || '').toString().toLowerCase();
+                return s === 'aborted' || s === '10';
+            });
+            if (!aborted.length) { updateQueueView(); return; }
+            let done = 0;
+            aborted.forEach(function(link) {
+                restartFile(link.fid, function() {
+                    done++;
+                    if (done === aborted.length) updateQueueView();
+                });
+            });
+        });
     };
 
     const delBtn = document.createElement('button');
@@ -530,6 +643,7 @@ function buildQueueItem(pkg, index, total) {
     };
 
     row.appendChild(checkbox);
+    row.appendChild(chevron);
     row.appendChild(nameDiv);
     row.appendChild(countSpan);
     row.appendChild(upBtn);

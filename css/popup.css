@@ -71,6 +71,31 @@ body {
     font-weight: 500;
 }
 
+/* Queue file list expand/collapse */
+.queue-chevron {
+    font-size: 10px;
+    transition: transform 0.15s;
+    width: 12px;
+    flex-shrink: 0;
+}
+
+.queue-chevron-open {
+    transform: rotate(90deg);
+}
+
+.queue-file-list {
+    border-left: 2px solid var(--bs-border-color, #dee2e6);
+    margin-left: 20px;
+    margin-bottom: 6px;
+}
+
+.queue-file-list .badge {
+    font-size: 9px;
+    font-weight: 500;
+    min-width: 55px;
+    text-align: center;
+}
+
 /* Stats dashboard hoster table */
 #statsHosterTable .table {
     margin-bottom: 0;

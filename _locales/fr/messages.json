@@ -555,5 +555,30 @@
   },
   "optionsTelegramSaved": {
     "message": "Param\u00e8tres Telegram enregistr\u00e9s"
+  },
+
+  "popupNoFiles": {
+    "message": "Aucun fichier"
+  },
+  "fileStatusFinished": {
+    "message": "Termin\u00e9"
+  },
+  "fileStatusDownloading": {
+    "message": "En cours"
+  },
+  "fileStatusWaiting": {
+    "message": "En attente"
+  },
+  "fileStatusFailed": {
+    "message": "\u00c9chou\u00e9"
+  },
+  "fileStatusAborted": {
+    "message": "Interrompu"
+  },
+  "fileStatusOffline": {
+    "message": "Hors ligne"
+  },
+  "fileStatusUnknown": {
+    "message": "Inconnu"
   }
 }
