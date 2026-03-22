@@ -186,12 +186,11 @@ export function getAuthHeaders() {
     }
 }
 
-export function incrementStat(key) {
-    chrome.storage.local.get(['downloadStats'], function(data) {
-        const stats = data.downloadStats ?? {};
-        stats[key] = (stats[key] ?? 0) + 1;
-        chrome.storage.local.set({ downloadStats: stats });
-    });
+export async function incrementStat(key) {
+    const data = await chrome.storage.local.get(['downloadStats']);
+    const stats = data.downloadStats ?? {};
+    stats[key] = (stats[key] ?? 0) + 1;
+    await chrome.storage.local.set({ downloadStats: stats });
 }
 
 export async function getStats() {

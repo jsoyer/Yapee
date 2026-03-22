@@ -139,11 +139,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
-    if (msg.action === 'addPackage' && msg.url) {
-        handleAddPackage(msg, sendResponse);
-        return true;
-    }
-    return false;
+    if (msg.action !== 'addPackage' || !msg.url) return false;
+    try {
+        const senderHost = new URL(sender.url).hostname;
+        const msgHost = new URL(msg.url).hostname;
+        const domains = getHosterDomains();
+        const isAllowed = domains.some(d => senderHost === d || senderHost.endsWith('.' + d));
+        const urlMatchesSender = domains.some(d => msgHost === d || msgHost.endsWith('.' + d));
+        if (!isAllowed || !urlMatchesSender) return false;
+    } catch { return false; }
+    handleAddPackage(msg, sendResponse);
+    return true;
 });
 
 // --- Badge + Enhanced Notifications ---
@@ -306,7 +312,15 @@ async function updateBadgeAndCaptcha(currentCount, downloads, lastCaptcha) {
 
 // Main orchestrator for the periodic alarm: fetches download state, fires all
 // notifications, updates analytics, and persists session state in one write.
+let checkInProgress = false;
 async function checkDownloads() {
+    if (checkInProgress) return;
+    checkInProgress = true;
+    try { await doCheckDownloads(); } catch (err) { console.error('checkDownloads:', err); }
+    finally { checkInProgress = false; }
+}
+
+async function doCheckDownloads() {
     await pullStoredData();
 
     const downloads = await getStatusDownloads();
