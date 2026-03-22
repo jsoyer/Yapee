@@ -13,32 +13,32 @@ const existingPackageSelect = document.getElementById('existingPackageSelect');
 let dragSrcIndex = null;
 
 // selectedPids is owned by popup.js; we receive it by reference and mutate it in place
-let _selectedPids = null;
-let _setButtonLoading = null;
-let _setErrorMessage = null;
+let selectedPids = null;
+let setButtonLoading = null;
+let setErrorMessage = null;
 
-export function init(selectedPids, setButtonLoading, setErrorMessage) {
-    _selectedPids = selectedPids;
-    _setButtonLoading = setButtonLoading;
-    _setErrorMessage = setErrorMessage;
+export function init(pids, buttonLoadingFn, errorMessageFn) {
+    selectedPids = pids;
+    setButtonLoading = buttonLoadingFn;
+    setErrorMessage = errorMessageFn;
 
     selectAllQueue.onchange = function() {
         const checkboxes = queueDiv.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(function(cb) {
             cb.checked = selectAllQueue.checked;
             const pid = parseInt(cb.closest('[data-pid]').dataset.pid, 10);
-            if (selectAllQueue.checked) _selectedPids.add(pid);
-            else _selectedPids.delete(pid);
+            if (selectAllQueue.checked) selectedPids.add(pid);
+            else selectedPids.delete(pid);
         });
         updateBatchBar();
     };
 
     batchDeleteBtn.onclick = async function() {
-        if (_selectedPids.size === 0) return;
-        _setButtonLoading(batchDeleteBtn, true);
-        await deletePackages([..._selectedPids]);
-        _selectedPids.clear();
-        _setButtonLoading(batchDeleteBtn, false);
+        if (selectedPids.size === 0) return;
+        setButtonLoading(batchDeleteBtn, true);
+        await deletePackages([...selectedPids]);
+        selectedPids.clear();
+        setButtonLoading(batchDeleteBtn, false);
         updateQueueView();
     };
 }
@@ -137,14 +137,11 @@ function toggleFileList(row, pkg, chevron) {
     row.after(fileList);
 }
 
-function buildQueueItem(pkg, index, total) {
-    const row = document.createElement('div');
-    row.className = 'd-flex align-items-center gap-1';
-    row.style.cssText = 'margin-bottom: 8px; font-size: small';
-    row.draggable = true;
-    row.dataset.index = index;
-    row.dataset.pid = pkg.pid;
+function clearDragOverStates() {
+    queueDiv.querySelectorAll('.yape-drag-over').forEach(el => el.classList.remove('yape-drag-over'));
+}
 
+function attachDragHandlers(row, index, pkg) {
     row.ondragstart = function(e) {
         dragSrcIndex = index;
         row.classList.add('yape-dragging');
@@ -154,12 +151,12 @@ function buildQueueItem(pkg, index, total) {
     row.ondragend = function() {
         row.classList.remove('yape-dragging');
         dragSrcIndex = null;
-        queueDiv.querySelectorAll('.yape-drag-over').forEach(el => el.classList.remove('yape-drag-over'));
+        clearDragOverStates();
     };
     row.ondragover = function(e) {
         e.preventDefault();
         e.dataTransfer.dropMode = 'move';
-        queueDiv.querySelectorAll('.yape-drag-over').forEach(el => el.classList.remove('yape-drag-over'));
+        clearDragOverStates();
         if (dragSrcIndex !== index) row.classList.add('yape-drag-over');
     };
     row.ondragleave = function() {
@@ -172,26 +169,9 @@ function buildQueueItem(pkg, index, total) {
         await orderPackage(pkg.pid, index);
         updateQueueView();
     };
+}
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input me-1 flex-shrink-0';
-    checkbox.checked = _selectedPids.has(pkg.pid);
-    checkbox.onchange = function() {
-        if (checkbox.checked) _selectedPids.add(pkg.pid);
-        else _selectedPids.delete(pkg.pid);
-        updateBatchBar();
-    };
-    checkbox.onclick = function(e) { e.stopPropagation(); };
-
-    const chevron = document.createElement('i');
-    chevron.className = 'fa fa-chevron-right queue-chevron';
-
-    row.onclick = function(e) {
-        if (e.target.closest('button, input, .queue-name')) return;
-        toggleFileList(row, pkg, chevron);
-    };
-
+function createRenameableNameDiv(pkg) {
     const nameDiv = document.createElement('div');
     nameDiv.className = 'ellipsis flex-grow-1 queue-name';
     nameDiv.textContent = pkg.name;
@@ -217,7 +197,7 @@ function buildQueueItem(pkg, index, total) {
             if (newName && newName !== pkg.name) {
                 const ok = await setPackageData(pkg.pid, { name: newName });
                 if (ok) updateQueueView();
-                else { input.replaceWith(nameDiv); _setErrorMessage(msg('popupRenameFailed')); }
+                else { input.replaceWith(nameDiv); setErrorMessage(msg('popupRenameFailed')); }
             } else {
                 input.replaceWith(nameDiv);
             }
@@ -228,6 +208,40 @@ function buildQueueItem(pkg, index, total) {
             if (ev.key === 'Escape') input.replaceWith(nameDiv);
         };
     };
+
+    return nameDiv;
+}
+
+function buildQueueItem(pkg, index, total) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-1';
+    row.style.cssText = 'margin-bottom: 8px; font-size: small';
+    row.draggable = true;
+    row.dataset.index = index;
+    row.dataset.pid = pkg.pid;
+
+    attachDragHandlers(row, index, pkg);
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input me-1 flex-shrink-0';
+    checkbox.checked = selectedPids.has(pkg.pid);
+    checkbox.onchange = function() {
+        if (checkbox.checked) selectedPids.add(pkg.pid);
+        else selectedPids.delete(pkg.pid);
+        updateBatchBar();
+    };
+    checkbox.onclick = function(e) { e.stopPropagation(); };
+
+    const chevron = document.createElement('i');
+    chevron.className = 'fa fa-chevron-right queue-chevron';
+
+    row.onclick = function(e) {
+        if (e.target.closest('button, input, .queue-name')) return;
+        toggleFileList(row, pkg, chevron);
+    };
+
+    const nameDiv = createRenameableNameDiv(pkg);
 
     const countSpan = document.createElement('span');
     countSpan.className = 'text-muted';
@@ -299,7 +313,7 @@ function buildQueueItem(pkg, index, total) {
 }
 
 function updateBatchBar() {
-    const count = _selectedPids.size;
+    const count = selectedPids.size;
     batchDeleteBtn.hidden = count === 0;
     batchCount.textContent = count > 0 ? msg('popupBatchSelected', [String(count)]) : '';
     selectAllQueue.indeterminate = false;
@@ -311,7 +325,7 @@ function updateBatchBar() {
 
 export async function updateQueueView(searchTerm) {
     const packages = await getQueuePackages();
-    queueDiv.textContent = '';
+    queueDiv.replaceChildren();
 
     const filtered = searchTerm
         ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
@@ -328,8 +342,8 @@ export async function updateQueueView(searchTerm) {
 
     // Prune selectedPids to only include visible packages
     const visiblePids = new Set(filtered.map(p => p.pid));
-    for (const pid of _selectedPids) {
-        if (!visiblePids.has(pid)) _selectedPids.delete(pid);
+    for (const pid of selectedPids) {
+        if (!visiblePids.has(pid)) selectedPids.delete(pid);
     }
 
     filtered.forEach(function(pkg, index) {

@@ -1,3 +1,7 @@
+// Error return convention:
+//   list-returning functions  → []
+//   object-returning functions → null
+//   boolean/success functions  → false
 import { origin, setCredentials, getAuthHeaders } from './storage.js';
 import { API_TIMEOUT, UPLOAD_TIMEOUT } from './constants.js';
 

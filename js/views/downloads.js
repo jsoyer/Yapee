@@ -7,6 +7,13 @@ const totalSpeedDiv = document.getElementById('totalSpeed');
 const queueEtaSpan = document.getElementById('queueEta');
 const actionButtons = document.getElementById('actionButtons');
 
+// Wired via init() — called after each refresh to check for pending captchas
+let onCaptchaUpdate = null;
+
+export function init(captchaUpdateCallback) {
+    onCaptchaUpdate = captchaUpdateCallback;
+}
+
 function buildDownloadItem(download, onRefresh) {
     const pct = Math.min(100, Math.max(0, parseFloat(download.percent) || 0));
 
@@ -87,10 +94,10 @@ function buildDownloadItem(download, onRefresh) {
     return wrapper;
 }
 
-export async function updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate) {
+export async function updateStatusDownloads(searchTerm, statusFilterValue) {
     const status = await getStatusDownloads();
     let totalSpeed = 0;
-    statusDiv.textContent = '';
+    statusDiv.replaceChildren();
 
     let filtered = searchTerm
         ? status.filter(d => d.name?.toLowerCase().includes(searchTerm))
@@ -108,7 +115,7 @@ export async function updateStatusDownloads(searchTerm, statusFilterValue, activ
         filtered.forEach(function(download) {
             totalSpeed += download.speed;
             statusDiv.appendChild(buildDownloadItem(download, function() {
-                updateStatusDownloads(searchTerm, statusFilterValue, activeView, onCaptchaUpdate);
+                updateStatusDownloads(searchTerm, statusFilterValue);
             }));
         });
     }
@@ -125,6 +132,6 @@ export async function updateStatusDownloads(searchTerm, statusFilterValue, activ
     });
     queueEtaSpan.textContent = totalSpeed > 0 ? formatEta(maxEta, msg) : '';
 
-    if (activeView === 'downloads') actionButtons.hidden = false;
+    actionButtons.hidden = false;
     if (onCaptchaUpdate) onCaptchaUpdate();
 }

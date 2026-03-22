@@ -11,7 +11,7 @@ import {
 import { initLocale, applyI18n, msg } from './js/i18n.js';
 import { nameFromUrl, setIcon, formatBytes } from './js/utils.js';
 import { POLL_FALLBACK_INTERVAL, MAX_SPEED_INPUT, MAX_CONTAINER_SIZE, SEARCH_DEBOUNCE_MS, CAPTCHA_DANGER_THRESHOLD, FEEDBACK_TIMEOUT } from './js/constants.js';
-import { updateStatusDownloads } from './js/views/downloads.js';
+import { init as initDownloads, updateStatusDownloads } from './js/views/downloads.js';
 import { init as initQueue, updateQueueView } from './js/views/queue.js';
 import { init as initCollector, updateCollectorView } from './js/views/collector.js';
 import { init as initHistory, updateHistoryView, updateStatsDashboard } from './js/views/history.js';
@@ -72,22 +72,21 @@ let searchTerm = '';
 let selectedPids = new Set();
 let statusFilterValue = '';
 let captchaSeenAt = null;
-let captchaTimerInterval = null;
-const eventUuid = crypto.randomUUID();
+let captchaElapsedTimer = null;
+const pollUuid = crypto.randomUUID();
 
 // --- Utility ---
 
 function setButtonLoading(btn, loading) {
     if (loading) {
         btn.dataset.originalText = btn.textContent;
-        while (btn.firstChild) btn.removeChild(btn.firstChild);
         const spinner = document.createElement('span');
         spinner.className = 'spinner-border spinner-border-sm';
         spinner.setAttribute('role', 'status');
-        btn.appendChild(spinner);
+        btn.replaceChildren(spinner);
         btn.disabled = true;
     } else {
-        while (btn.firstChild) btn.removeChild(btn.firstChild);
+        btn.replaceChildren();
         btn.textContent = btn.dataset.originalText || '';
         btn.disabled = false;
     }
@@ -154,7 +153,7 @@ async function updateCaptchaAlert() {
         captchaForm.hidden = true;
         captchaInput.value = '';
         captchaSeenAt = null;
-        if (captchaTimerInterval) { clearInterval(captchaTimerInterval); captchaTimerInterval = null; }
+        if (captchaElapsedTimer) { clearInterval(captchaElapsedTimer); captchaElapsedTimer = null; }
         return;
     }
     captchaAlert.hidden = false;
@@ -164,9 +163,9 @@ async function updateCaptchaAlert() {
         captchaImage.hidden = false;
         captchaForm.hidden = false;
     }
-    if (!captchaTimerInterval) {
+    if (!captchaElapsedTimer) {
         const timerSpan = document.getElementById('captchaTimer');
-        captchaTimerInterval = setInterval(function() {
+        captchaElapsedTimer = setInterval(function() {
             if (!captchaSeenAt) return;
             const elapsed = Date.now() - captchaSeenAt;
             if (timerSpan) timerSpan.textContent = elapsed >= 30000 ? msg('popupCaptchaTimeout', [formatCaptchaElapsed(elapsed)]) : '';
@@ -200,6 +199,15 @@ async function updateStats() {
     statsDiv.hidden = false;
 }
 
+// --- View refresh ---
+
+function refreshCurrentView() {
+    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue);
+    else if (activeView === 'queue') updateQueueView(searchTerm);
+    else if (activeView === 'collector') updateCollectorView(searchTerm);
+    else if (activeView === 'history') updateHistoryView(searchTerm);
+}
+
 // --- Search ---
 
 let searchDebounceTimer = null;
@@ -207,25 +215,22 @@ searchInput.oninput = function() {
     clearTimeout(searchDebounceTimer);
     searchDebounceTimer = setTimeout(function() {
         searchTerm = searchInput.value.toLowerCase();
-        if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
-        else if (activeView === 'queue') updateQueueView(searchTerm);
-        else if (activeView === 'collector') updateCollectorView(searchTerm);
-        else if (activeView === 'history') updateHistoryView(searchTerm);
+        refreshCurrentView();
     }, SEARCH_DEBOUNCE_MS);
 };
 
 statusFilter.onchange = function() {
     statusFilterValue = statusFilter.value;
-    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue);
 };
 
 // --- Event-driven polling ---
 
 async function startEventLoop() {
-    const events = await getEvents(eventUuid);
+    const events = await getEvents(pollUuid);
     if (events === null) {
         pollTimeout = setTimeout(function() {
-            if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+            if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue);
             else if (activeView === 'queue') updateQueueView(searchTerm);
             startEventLoop();
         }, POLL_FALLBACK_INTERVAL);
@@ -239,7 +244,7 @@ async function startEventLoop() {
         e.destination === 'collector'
     );
 
-    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    if (activeView === 'downloads') updateStatusDownloads(searchTerm, statusFilterValue);
     else if (activeView === 'queue' && hasQueueEvent) updateQueueView(searchTerm);
     if (hasCollectorEvent && activeView === 'collector') {
         updateCollectorView(searchTerm);
@@ -279,7 +284,7 @@ function switchTab(tab) {
     if (tab !== 'queue') { selectedPids.clear(); }
 
     if (tab === 'downloads') {
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+        updateStatusDownloads(searchTerm, statusFilterValue);
         startEventLoop();
     } else if (tab === 'queue') {
         updateQueueView(searchTerm);
@@ -332,7 +337,7 @@ pauseButton.onclick = async function() {
 stopAllButton.onclick = async function() {
     setButtonLoading(stopAllButton, true);
     await stopAllDownloads();
-    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    updateStatusDownloads(searchTerm, statusFilterValue);
     setButtonLoading(stopAllButton, false);
 };
 
@@ -347,7 +352,7 @@ deleteFinishedButton.onclick = async function() {
     setButtonLoading(deleteFinishedButton, true);
     const success = await deleteFinished();
     if (success) setSuccessMessage(msg('popupFinishedCleared'));
-    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    updateStatusDownloads(searchTerm, statusFilterValue);
     setButtonLoading(deleteFinishedButton, false);
 };
 
@@ -372,7 +377,7 @@ captchaSubmit.onclick = async function() {
     updateCaptchaAlert();
 };
 
-multiUrlButton.onclick = async function() {
+async function handleMultiUrlAdd() {
     const lines = multiUrlInput.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (!lines.length) return;
     setButtonLoading(multiUrlButton, true);
@@ -380,7 +385,7 @@ multiUrlButton.onclick = async function() {
     const targetPid = existingPackageSelect.value;
 
     // Add to existing package
-    if (targetPid) {
+    if (targetPid !== '') {
         const ok = await addFiles(parseInt(targetPid, 10), lines);
         setButtonLoading(multiUrlButton, false);
         if (ok) {
@@ -390,7 +395,7 @@ multiUrlButton.onclick = async function() {
         } else {
             setErrorMessage(msg('popupUrlsFailed', [String(lines.length)]));
         }
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+        refreshCurrentView();
         updateStats();
         return;
     }
@@ -409,8 +414,7 @@ multiUrlButton.onclick = async function() {
         } else {
             setErrorMessage(msg('popupUrlsFailed', [String(errorCount)]));
         }
-        if (activeView === 'collector') updateCollectorView(searchTerm);
-        else { updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert); }
+        refreshCurrentView();
         updateStats();
     }
 
@@ -429,7 +433,9 @@ multiUrlButton.onclick = async function() {
     }));
     const errors = results.filter(function(s) { return !s; }).length;
     onComplete(errors === 0, errors);
-};
+}
+
+multiUrlButton.onclick = handleMultiUrlAdd;
 
 containerUploadButton.onclick = async function() {
     const file = containerFileInput.files[0];
@@ -450,7 +456,7 @@ containerUploadButton.onclick = async function() {
         containerFileInput.value = '';
         incrementStat('packagesAdded');
         setSuccessMessage(msg('popupUploadSuccess'));
-        updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+        refreshCurrentView();
         updateStats();
     } else {
         setErrorMessage(msg('popupUploadError', [error || 'Unknown error']));
@@ -459,6 +465,7 @@ containerUploadButton.onclick = async function() {
 
 // --- Init view modules (after switchTab is defined) ---
 
+initDownloads(updateCaptchaAlert);
 initQueue(selectedPids, setButtonLoading, setErrorMessage);
 initCollector(switchTab);
 initHistory();
@@ -474,7 +481,7 @@ initHistory();
 
     const { success: loggedIn, unauthorized, error, response } = await isLoggedIn();
     if (!loggedIn) {
-        statusDiv.textContent = '';
+        statusDiv.replaceChildren();
         const wrapper = document.createElement('div');
         wrapper.className = 'text-center m-3';
         const msgDiv = document.createElement('div');
@@ -491,7 +498,7 @@ initHistory();
     }
 
     updatePauseButton(response && response.paused);
-    updateStatusDownloads(searchTerm, statusFilterValue, activeView, updateCaptchaAlert);
+    updateStatusDownloads(searchTerm, statusFilterValue);
     startEventLoop();
     updateLimitSpeedStatus();
     updateProxyStatus();
@@ -503,7 +510,7 @@ initHistory();
     filterBar.hidden = false;
 
     if (servers.length > 1) {
-        serverSelect.textContent = '';
+        serverSelect.replaceChildren();
         servers.forEach(function(s) {
             const opt = document.createElement('option');
             opt.value = s.id;

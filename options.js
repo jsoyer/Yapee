@@ -44,17 +44,15 @@ function saveLoginRateLimit() {
 
 
 function enableSpinner() {
-    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
     const spinner = document.createElement('div');
     spinner.className = 'spinner-border text-primary m-3';
     const label = document.createElement('div');
     label.textContent = msg('optionsCheckingStatus');
-    spinnerDiv.appendChild(spinner);
-    spinnerDiv.appendChild(label);
+    spinnerDiv.replaceChildren(spinner, label);
 }
 
 function disableSpinner() {
-    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
+    spinnerDiv.replaceChildren();
 }
 
 function setDangerMessage(message, timeout=FEEDBACK_TIMEOUT) {
@@ -86,7 +84,7 @@ async function updateLoggedInStatus(callback) {
     disableSpinner();
     loginStatusOKDiv.hidden = !loggedIn;
     loginStatusKODiv.hidden = loggedIn;
-    loginStatusKODiv.textContent = '';
+    loginStatusKODiv.replaceChildren();
     const errIcon = document.createElement('i');
     errIcon.className = 'fa fa-times small me-3';
     loginStatusKODiv.appendChild(errIcon);
@@ -244,58 +242,58 @@ loginButtonModal.onclick = async function(ev) {
 
 // --- Server Management ---
 
+function buildServerRow(s) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 mb-1';
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${s.id === activeServerId ? 'bg-primary' : 'bg-secondary'}`;
+    badge.textContent = s.id === activeServerId ? msg('optionsActive') : msg('optionsInactive');
+
+    const label = document.createElement('span');
+    label.className = 'flex-grow-1';
+    label.textContent = `${s.name} — ${s.serverProtocol}://${s.serverIp}:${s.serverPort}${s.serverPath}`;
+
+    const activateBtn = document.createElement('button');
+    activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+    activateBtn.textContent = msg('optionsActivate');
+    activateBtn.hidden = s.id === activeServerId;
+    activateBtn.onclick = async function() {
+        await setActiveServer(s.id);
+        await pullStoredData();
+        renderServerList();
+        updateForm();
+        updateLoggedInStatus();
+    };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+    deleteBtn.textContent = msg('optionsDelete');
+    deleteBtn.onclick = async function() {
+        if (!confirm(msg('optionsConfirmDeleteServer'))) return;
+        await removeServer(s.id);
+        await pullStoredData();
+        renderServerList();
+        updateForm();
+        updateLoggedInStatus();
+    };
+
+    row.appendChild(badge);
+    row.appendChild(label);
+    row.appendChild(activateBtn);
+    row.appendChild(deleteBtn);
+    return row;
+}
+
 function renderServerList() {
-    serverListDiv.textContent = '';
     if (!servers.length) {
         const noServers = document.createElement('span');
         noServers.className = 'text-muted';
         noServers.textContent = msg('optionsNoServers');
-        serverListDiv.appendChild(noServers);
+        serverListDiv.replaceChildren(noServers);
         return;
     }
-    servers.forEach(function(s) {
-        const row = document.createElement('div');
-        row.className = 'd-flex align-items-center gap-2 mb-1';
-
-        const badge = document.createElement('span');
-        badge.className = `badge ${s.id === activeServerId ? 'bg-primary' : 'bg-secondary'}`;
-        badge.textContent = s.id === activeServerId ? msg('optionsActive') : msg('optionsInactive');
-
-        const label = document.createElement('span');
-        label.className = 'flex-grow-1';
-        label.textContent = `${s.name} — ${s.serverProtocol}://${s.serverIp}:${s.serverPort}${s.serverPath}`;
-
-        const activateBtn = document.createElement('button');
-        activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
-        activateBtn.textContent = msg('optionsActivate');
-        activateBtn.hidden = s.id === activeServerId;
-        activateBtn.onclick = async function() {
-            await setActiveServer(s.id);
-            await pullStoredData();
-            renderServerList();
-            updateForm();
-            updateLoggedInStatus();
-        };
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-        deleteBtn.textContent = msg('optionsDelete');
-        deleteBtn.disabled = false;
-        deleteBtn.onclick = async function() {
-            if (!confirm(msg('optionsConfirmDeleteServer'))) return;
-            await removeServer(s.id);
-            await pullStoredData();
-            renderServerList();
-            updateForm();
-            updateLoggedInStatus();
-        };
-
-        row.appendChild(badge);
-        row.appendChild(label);
-        row.appendChild(activateBtn);
-        row.appendChild(deleteBtn);
-        serverListDiv.appendChild(row);
-    });
+    serverListDiv.replaceChildren(...servers.map(buildServerRow));
 }
 
 function updateForm() {
@@ -333,8 +331,64 @@ const addAccountButton = document.getElementById('addAccountButton');
 const accountFeedback = document.getElementById('accountFeedback');
 const accountSuccess = document.getElementById('accountSuccess');
 
+function buildAccountRow({ plugin, login: accLogin, valid }) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 mb-1';
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${valid ? 'bg-success' : 'bg-danger'}`;
+    badge.textContent = valid ? msg('optionsValid') : msg('optionsInvalid');
+
+    const label = document.createElement('span');
+    label.className = 'flex-grow-1';
+    label.textContent = `${plugin} — ${accLogin}`;
+
+    const testBtn = document.createElement('button');
+    testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+    testBtn.textContent = msg('optionsTestAccount');
+    testBtn.onclick = async function() {
+        testBtn.disabled = true;
+        const spin = document.createElement('span');
+        spin.className = 'spinner-border spinner-border-sm';
+        testBtn.replaceChildren(spin);
+        const refreshed = await getAccounts(true);
+        testBtn.disabled = false;
+        testBtn.textContent = msg('optionsTestAccount');
+        const list = refreshed[plugin] || [];
+        const found = list.find(function(a) { return a.login === accLogin; });
+        if (found && found.valid) {
+            badge.className = 'badge bg-success';
+            badge.textContent = msg('optionsValid');
+            accountSuccess.textContent = msg('optionsAccountValid');
+            accountSuccess.hidden = false;
+            accountFeedback.hidden = true;
+        } else {
+            badge.className = 'badge bg-danger';
+            badge.textContent = msg('optionsInvalid');
+            accountFeedback.textContent = msg('optionsAccountInvalid');
+            accountFeedback.hidden = false;
+            accountSuccess.hidden = true;
+        }
+    };
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+    removeBtn.textContent = msg('optionsRemove');
+    removeBtn.onclick = async function() {
+        if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
+        removeBtn.disabled = true;
+        await removeAccount(plugin, accLogin);
+        loadAccounts();
+    };
+
+    row.appendChild(badge);
+    row.appendChild(label);
+    row.appendChild(testBtn);
+    row.appendChild(removeBtn);
+    return row;
+}
+
 function renderAccounts(accounts) {
-    accountsDiv.textContent = '';
     const entries = [];
     for (const [plugin, list] of Object.entries(accounts)) {
         list.forEach(acc => entries.push({ plugin, login: acc.login, valid: acc.valid }));
@@ -343,74 +397,17 @@ function renderAccounts(accounts) {
         const empty = document.createElement('div');
         empty.className = 'text-muted text-center';
         empty.textContent = msg('optionsNoAccounts');
-        accountsDiv.appendChild(empty);
+        accountsDiv.replaceChildren(empty);
         return;
     }
-    entries.forEach(function({ plugin, login: accLogin, valid }) {
-        const row = document.createElement('div');
-        row.className = 'd-flex align-items-center gap-2 mb-1';
-
-        const badge = document.createElement('span');
-        badge.className = `badge ${valid ? 'bg-success' : 'bg-danger'}`;
-        badge.textContent = valid ? msg('optionsValid') : msg('optionsInvalid');
-
-        const label = document.createElement('span');
-        label.className = 'flex-grow-1';
-        label.textContent = `${plugin} — ${accLogin}`;
-
-        const testBtn = document.createElement('button');
-        testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
-        testBtn.textContent = msg('optionsTestAccount');
-        testBtn.onclick = async function() {
-            testBtn.disabled = true;
-            testBtn.textContent = '';
-            const spin = document.createElement('span');
-            spin.className = 'spinner-border spinner-border-sm';
-            testBtn.appendChild(spin);
-            const refreshed = await getAccounts(true);
-            testBtn.disabled = false;
-            testBtn.textContent = msg('optionsTestAccount');
-            const list = refreshed[plugin] || [];
-            const found = list.find(function(a) { return a.login === accLogin; });
-            if (found && found.valid) {
-                badge.className = 'badge bg-success';
-                badge.textContent = msg('optionsValid');
-                accountSuccess.textContent = msg('optionsAccountValid');
-                accountSuccess.hidden = false;
-                accountFeedback.hidden = true;
-            } else {
-                badge.className = 'badge bg-danger';
-                badge.textContent = msg('optionsInvalid');
-                accountFeedback.textContent = msg('optionsAccountInvalid');
-                accountFeedback.hidden = false;
-                accountSuccess.hidden = true;
-            }
-        };
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-        removeBtn.textContent = msg('optionsRemove');
-        removeBtn.onclick = async function() {
-            if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
-            removeBtn.disabled = true;
-            await removeAccount(plugin, accLogin);
-            loadAccounts();
-        };
-
-        row.appendChild(badge);
-        row.appendChild(label);
-        row.appendChild(testBtn);
-        row.appendChild(removeBtn);
-        accountsDiv.appendChild(row);
-    });
+    accountsDiv.replaceChildren(...entries.map(buildAccountRow));
 }
 
 async function loadAccounts() {
-    accountsDiv.textContent = '';
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'text-muted text-center';
     loadingDiv.textContent = msg('optionsLoading');
-    accountsDiv.appendChild(loadingDiv);
+    accountsDiv.replaceChildren(loadingDiv);
     const accounts = await getAccounts();
     renderAccounts(accounts);
 }
@@ -562,10 +559,9 @@ telegramSaveBtn.onclick = async function() {
 
 telegramTestBtn.onclick = async function() {
     telegramTestBtn.disabled = true;
-    telegramTestBtn.textContent = '';
     const tgSpin = document.createElement('span');
     tgSpin.className = 'spinner-border spinner-border-sm';
-    telegramTestBtn.appendChild(tgSpin);
+    telegramTestBtn.replaceChildren(tgSpin);
     const form = readTelegramForm();
     const result = await testTelegramConfig(form.botToken, form.chatId);
     telegramTestBtn.disabled = false;
