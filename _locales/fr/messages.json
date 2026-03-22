@@ -643,19 +643,6 @@
     "message": "Parametres ntfy enregistres"
   },
 
-  "popupDropFiles": {
-    "message": "Deposez vos fichiers DLC/CCF/RSDF ici"
-  },
-  "popupFileUploaded": {
-    "message": "Fichier envoye avec succes"
-  },
-  "popupFileUploadFailed": {
-    "message": "Echec de l'envoi : $1",
-    "placeholders": {
-      "1": { "content": "$1" }
-    }
-  },
-
   "popupNoFiles": {
     "message": "Aucun fichier"
   },

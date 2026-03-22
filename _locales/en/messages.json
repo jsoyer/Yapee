@@ -913,22 +913,6 @@
     "description": "ntfy save success feedback"
   },
 
-  "popupDropFiles": {
-    "message": "Drop DLC/CCF/RSDF files here",
-    "description": "Drag and drop overlay label"
-  },
-  "popupFileUploaded": {
-    "message": "File uploaded successfully",
-    "description": "Drag and drop success message"
-  },
-  "popupFileUploadFailed": {
-    "message": "Upload failed: $1",
-    "description": "Drag and drop error message",
-    "placeholders": {
-      "1": { "content": "$1", "example": "Server error" }
-    }
-  },
-
   "popupNoFiles": {
     "message": "No files",
     "description": "Empty file list in queue package"
