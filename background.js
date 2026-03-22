@@ -1,16 +1,8 @@
-import { pullStoredData, origin, getAuthHeaders, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
-import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile } from './js/pyload-api.js';
+import { pullStoredData, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
+import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile, isLoggedIn, checkURL } from './js/pyload-api.js';
 import { sendTelegramNotification } from './js/telegram.js';
-
-function nameFromUrl(url) {
-    try {
-        const pathname = new URL(url).pathname;
-        const segment = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
-        const name = segment.replace(/\.[^.]+$/, '');
-        if (name.length > 2) return name;
-    } catch {}
-    return url.split('/').pop() || url;
-}
+import { nameFromUrl } from './js/utils.js';
+import { ALARM_PERIOD_MINUTES, INITIAL_RETRY_BACKOFF, MAX_RETRY_BACKOFF, MAX_RETRY_ATTEMPTS } from './js/constants.js';
 
 const notify = function(title, message, options = {}) {
     return chrome.notifications.create(options.id || '', {
@@ -22,47 +14,29 @@ const notify = function(title, message, options = {}) {
     });
 }
 
-async function downloadLink(info, tab) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    try {
-        const statusRes = await fetch(`${origin}/api/statusServer`, { method: 'GET', redirect: 'error', signal: controller.signal, headers: { ...getAuthHeaders() }, credentials: 'omit' });
-        const statusJson = await statusRes.json();
-        clearTimeout(timeoutId);
-        if (Object.hasOwn(statusJson, 'error')) {
-            if (statusJson.error === 'Forbidden') notify('Yapee', chrome.i18n.getMessage('bgInvalidCredentials'));
+function downloadLink(info, tab) {
+    isLoggedIn(function(success, unauthorized) {
+        if (!success) {
+            if (unauthorized) notify('Yapee', chrome.i18n.getMessage('bgInvalidCredentials'));
             else notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
             return;
         }
-        const checkRes = await fetch(`${origin}/api/checkURLs?urls=["${encodeURIComponent(info.linkUrl)}"]`, {
-            method: 'POST',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            credentials: 'omit'
+        checkURL(info.linkUrl, function(valid) {
+            if (!valid) {
+                notify('Yapee', chrome.i18n.getMessage('bgCheckUrlError', ['unknown error']));
+                return;
+            }
+            const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
+            addPackage(safeName, info.linkUrl, function(pkgSuccess, error) {
+                if (!pkgSuccess) {
+                    notify('Yapee', chrome.i18n.getMessage('bgDownloadError', [error || 'unknown error']));
+                    return;
+                }
+                incrementStat('packagesAdded');
+                notify('Yapee', chrome.i18n.getMessage('bgDownloadAdded'));
+            });
         });
-        const checkJson = await checkRes.json();
-        if (Object.hasOwn(checkJson, 'error')) {
-            notify('Yapee', chrome.i18n.getMessage('bgCheckUrlError', [checkJson.error || 'unknown error']));
-            return;
-        }
-        const safeName = nameFromUrl(info.linkUrl).replace(/[^a-z0-9._\-]/gi, '_');
-        const addRes = await fetch(`${origin}/api/addPackage?name="${encodeURIComponent(safeName)}"&links=["${encodeURIComponent(info.linkUrl)}"]`, {
-            method: 'POST',
-            redirect: 'error',
-            headers: { ...getAuthHeaders() },
-            credentials: 'omit'
-        });
-        const addJson = await addRes.json();
-        if (Object.hasOwn(addJson, 'error')) {
-            notify('Yapee', chrome.i18n.getMessage('bgDownloadError', [addJson.error || 'unknown error']));
-            return;
-        }
-        incrementStat('packagesAdded');
-        notify('Yapee', chrome.i18n.getMessage('bgDownloadAdded'));
-    } catch (e) {
-        clearTimeout(timeoutId);
-        notify('Yapee', chrome.i18n.getMessage('bgServerUnreachable'));
-    }
+    });
 }
 
 function extractHoster(url) {
@@ -98,7 +72,7 @@ chrome.runtime.onInstalled.addListener( () => {
         title: chrome.i18n.getMessage('bgExtractLinks'),
         contexts:['page']
     });
-    chrome.alarms.create('checkDownloads', { periodInMinutes: 0.5 });
+    chrome.alarms.create('checkDownloads', { periodInMinutes: ALARM_PERIOD_MINUTES });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -285,12 +259,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                         getRetryQueue((retryQueue) => {
                             let changed = false;
                             for (const [fid, info] of Object.entries(errorFids)) {
-                                const entry = retryQueue[fid] || { attempts: 0, nextRetry: 0, backoffMs: 60000, name: info.name };
-                                if (entry.attempts >= 5) continue;
+                                const entry = retryQueue[fid] || { attempts: 0, nextRetry: 0, backoffMs: INITIAL_RETRY_BACKOFF, name: info.name };
+                                if (entry.attempts >= MAX_RETRY_ATTEMPTS) continue;
                                 if (Date.now() < entry.nextRetry) continue;
                                 restartFile(parseInt(fid, 10), () => {});
                                 entry.attempts++;
-                                entry.backoffMs = Math.min(entry.backoffMs * 2, 3600000);
+                                entry.backoffMs = Math.min(entry.backoffMs * 2, MAX_RETRY_BACKOFF);
                                 entry.nextRetry = Date.now() + entry.backoffMs;
                                 entry.name = info.name;
                                 retryQueue[fid] = entry;

@@ -1,4 +1,5 @@
 import { origin, setCredentials, getAuthHeaders } from './storage.js';
+import { API_TIMEOUT, UPLOAD_TIMEOUT } from './constants.js';
 
 let serverStatusController = null;
 
@@ -11,12 +12,13 @@ export function abortServerStatus() {
 
 async function apiFetch(path, onSuccess, onError, method = 'GET') {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     try {
         const res = await fetch(`${origin}${path}`, {
             method, redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal, credentials: 'omit'
         });
         clearTimeout(timeoutId);
+        if (!res.ok) { if (onError) onError(); return; }
         await onSuccess(res);
     } catch {
         clearTimeout(timeoutId);
@@ -26,7 +28,7 @@ async function apiFetch(path, onSuccess, onError, method = 'GET') {
 
 export async function getServerStatus(callback) {
     serverStatusController = new AbortController();
-    const timeoutId = setTimeout(() => serverStatusController.abort(), 5000);
+    const timeoutId = setTimeout(() => serverStatusController.abort(), API_TIMEOUT);
     try {
         const res = await fetch(`${origin}/api/statusServer`, {
             method: 'GET',
@@ -384,7 +386,7 @@ export async function getLog(offset, callback) {
 
 export async function uploadContainer(file, callback) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT);
     try {
         // Try the direct API endpoint with Basic Auth
         const formData = new FormData();

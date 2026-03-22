@@ -10,80 +10,65 @@ import {
     uploadContainer
 } from './js/pyload-api.js';
 import { initLocale, applyI18n, msg } from './js/i18n.js';
-
-function setIcon(el, iconClass) {
-    el.textContent = '';
-    const icon = document.createElement('i');
-    icon.className = iconClass;
-    el.appendChild(icon);
-}
-
-function nameFromUrl(url) {
-    try {
-        const pathname = new URL(url).pathname;
-        const segment = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
-        const name = segment.replace(/\.[^.]+$/, '');
-        if (name.length > 2) return name;
-    } catch {}
-    return url.split('/').pop() || url;
-}
+import { nameFromUrl, setIcon } from './js/utils.js';
+import { POLL_FALLBACK_INTERVAL, HISTORY_DISPLAY_LIMIT, MAX_HOSTERS_DISPLAY, MAX_SPEED_INPUT, MAX_CONTAINER_SIZE, SEARCH_DEBOUNCE_MS, CAPTCHA_DANGER_THRESHOLD, FEEDBACK_TIMEOUT } from './js/constants.js';
 
 initLocale().then(function () { applyI18n(); });
 
-let statusDiv = document.getElementById('status');
-let errorLabel = document.getElementById('error');
-let successLabel = document.getElementById('success');
-let pageDownloadDiv = document.getElementById('pageDownloadDiv');
-let optionsButton = document.getElementById('optionsButton');
-let limitSpeedButton = document.getElementById('limitSpeedButton');
-let proxyButton = document.getElementById('proxyButton');
-let externalLinkButton = document.getElementById('externalLinkButton');
-let totalSpeedDiv = document.getElementById('totalSpeed');
-let pauseButton = document.getElementById('pauseButton');
-let pauseIcon = document.getElementById('pauseIcon');
-let captchaAlert = document.getElementById('captchaAlert');
-let captchaLink = document.getElementById('captchaLink');
-let captchaImage = document.getElementById('captchaImage');
-let captchaForm = document.getElementById('captchaForm');
-let captchaInput = document.getElementById('captchaInput');
-let captchaSubmit = document.getElementById('captchaSubmit');
-let multiUrlDiv = document.getElementById('multiUrlDiv');
-let multiUrlInput = document.getElementById('multiUrlInput');
-let multiUrlButton = document.getElementById('multiUrlButton');
-let containerUploadDiv = document.getElementById('containerUploadDiv');
-let containerFileInput = document.getElementById('containerFileInput');
-let containerUploadButton = document.getElementById('containerUploadButton');
-let freeSpaceDiv = document.getElementById('freeSpaceDiv');
-let actionButtons = document.getElementById('actionButtons');
-let stopAllButton = document.getElementById('stopAllButton');
-let restartFailedButton = document.getElementById('restartFailedButton');
-let deleteFinishedButton = document.getElementById('deleteFinishedButton');
-let viewTabs = document.getElementById('viewTabs');
-let downloadsTab = document.getElementById('downloadsTab');
-let queueTab = document.getElementById('queueTab');
-let collectorTab = document.getElementById('collectorTab');
-let queueDiv = document.getElementById('queueDiv');
-let collectorDiv = document.getElementById('collectorDiv');
-let serverVersionDiv = document.getElementById('serverVersionDiv');
-let serverSelect = document.getElementById('serverSelect');
-let searchInput = document.getElementById('searchInput');
-let statsDiv = document.getElementById('statsDiv');
-let queueEtaSpan = document.getElementById('queueEta');
-let maxSpeedInput = document.getElementById('maxSpeedInput');
-let batchBar = document.getElementById('batchBar');
-let selectAllQueue = document.getElementById('selectAllQueue');
-let batchCount = document.getElementById('batchCount');
-let batchDeleteBtn = document.getElementById('batchDeleteBtn');
-let existingPackageSelect = document.getElementById('existingPackageSelect');
-let packageNameInput = document.getElementById('packageNameInput');
-let historyTab = document.getElementById('historyTab');
-let historyDiv = document.getElementById('historyDiv');
-let statusFilter = document.getElementById('statusFilter');
-let filterBar = document.getElementById('filterBar');
-let statsDashboard = document.getElementById('statsDashboard');
-let statsSummary = document.getElementById('statsSummary');
-let statsHosterTable = document.getElementById('statsHosterTable');
-let clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const statusDiv = document.getElementById('status');
+const errorLabel = document.getElementById('error');
+const successLabel = document.getElementById('success');
+const pageDownloadDiv = document.getElementById('pageDownloadDiv');
+const optionsButton = document.getElementById('optionsButton');
+const limitSpeedButton = document.getElementById('limitSpeedButton');
+const proxyButton = document.getElementById('proxyButton');
+const externalLinkButton = document.getElementById('externalLinkButton');
+const totalSpeedDiv = document.getElementById('totalSpeed');
+const pauseButton = document.getElementById('pauseButton');
+const pauseIcon = document.getElementById('pauseIcon');
+const captchaAlert = document.getElementById('captchaAlert');
+const captchaLink = document.getElementById('captchaLink');
+const captchaImage = document.getElementById('captchaImage');
+const captchaForm = document.getElementById('captchaForm');
+const captchaInput = document.getElementById('captchaInput');
+const captchaSubmit = document.getElementById('captchaSubmit');
+const multiUrlDiv = document.getElementById('multiUrlDiv');
+const multiUrlInput = document.getElementById('multiUrlInput');
+const multiUrlButton = document.getElementById('multiUrlButton');
+const containerUploadDiv = document.getElementById('containerUploadDiv');
+const containerFileInput = document.getElementById('containerFileInput');
+const containerUploadButton = document.getElementById('containerUploadButton');
+const freeSpaceDiv = document.getElementById('freeSpaceDiv');
+const actionButtons = document.getElementById('actionButtons');
+const stopAllButton = document.getElementById('stopAllButton');
+const restartFailedButton = document.getElementById('restartFailedButton');
+const deleteFinishedButton = document.getElementById('deleteFinishedButton');
+const viewTabs = document.getElementById('viewTabs');
+const downloadsTab = document.getElementById('downloadsTab');
+const queueTab = document.getElementById('queueTab');
+const collectorTab = document.getElementById('collectorTab');
+const queueDiv = document.getElementById('queueDiv');
+const collectorDiv = document.getElementById('collectorDiv');
+const serverVersionDiv = document.getElementById('serverVersionDiv');
+const serverSelect = document.getElementById('serverSelect');
+const searchInput = document.getElementById('searchInput');
+const statsDiv = document.getElementById('statsDiv');
+const queueEtaSpan = document.getElementById('queueEta');
+const maxSpeedInput = document.getElementById('maxSpeedInput');
+const batchBar = document.getElementById('batchBar');
+const selectAllQueue = document.getElementById('selectAllQueue');
+const batchCount = document.getElementById('batchCount');
+const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+const existingPackageSelect = document.getElementById('existingPackageSelect');
+const packageNameInput = document.getElementById('packageNameInput');
+const historyTab = document.getElementById('historyTab');
+const historyDiv = document.getElementById('historyDiv');
+const statusFilter = document.getElementById('statusFilter');
+const filterBar = document.getElementById('filterBar');
+const statsDashboard = document.getElementById('statsDashboard');
+const statsSummary = document.getElementById('statsSummary');
+const statsHosterTable = document.getElementById('statsHosterTable');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 
 let limitSpeedStatus = true;
 let proxyStatus = false;
@@ -192,7 +177,7 @@ function updateCaptchaAlert() {
                 if (!captchaSeenAt) return;
                 const elapsed = Date.now() - captchaSeenAt;
                 if (timerSpan) timerSpan.textContent = elapsed >= 30000 ? msg('popupCaptchaTimeout', [formatCaptchaElapsed(elapsed)]) : '';
-                if (elapsed >= 120000) timerSpan.className = 'small text-danger fw-bold';
+                if (elapsed >= CAPTCHA_DANGER_THRESHOLD) timerSpan.className = 'small text-danger fw-bold';
                 else timerSpan.className = 'small text-warning';
             }, 1000);
         }
@@ -237,7 +222,7 @@ searchInput.oninput = function() {
         else if (activeView === 'queue') updateQueueView();
         else if (activeView === 'collector') updateCollectorView();
         else if (activeView === 'history') updateHistoryView();
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
 };
 
 statusFilter.onchange = function() {
@@ -254,7 +239,7 @@ function startEventLoop() {
                 if (activeView === 'downloads') updateStatusDownloads();
                 else if (activeView === 'queue') updateQueueView();
                 startEventLoop();
-            }, 3000);
+            }, POLL_FALLBACK_INTERVAL);
             return;
         }
 
@@ -829,7 +814,7 @@ function updateHistoryView() {
             return;
         }
 
-        filtered.slice(0, 100).forEach(function(entry) {
+        filtered.slice(0, HISTORY_DISPLAY_LIMIT).forEach(function(entry) {
             const row = document.createElement('div');
             row.className = 'd-flex align-items-center gap-1';
             row.style.cssText = 'margin-bottom: 6px; font-size: small';
@@ -902,7 +887,7 @@ function updateStatsDashboard() {
             thead.appendChild(headerRow);
             table.appendChild(thead);
             const tbody = document.createElement('tbody');
-            hosters.slice(0, 10).forEach(function([hoster, data]) {
+            hosters.slice(0, MAX_HOSTERS_DISPLAY).forEach(function([hoster, data]) {
                 const tr = document.createElement('tr');
                 const ok = data.count - data.failures;
                 const tdName = document.createElement('td');
@@ -1004,7 +989,7 @@ function setErrorMessage(message) {
     errorLabel.hidden = false;
 }
 
-function setSuccessMessage(message, timeout = 3000) {
+function setSuccessMessage(message, timeout = FEEDBACK_TIMEOUT) {
     if (!message) { successLabel.hidden = true; return; }
     successLabel.innerText = message;
     successLabel.hidden = false;
@@ -1024,7 +1009,7 @@ limitSpeedButton.onclick = function() {
 maxSpeedInput.onchange = function() {
     let val = parseInt(maxSpeedInput.value, 10);
     if (isNaN(val)) return;
-    val = Math.max(0, Math.min(val, 100000));
+    val = Math.max(0, Math.min(val, MAX_SPEED_INPUT));
     maxSpeedInput.value = val || '';
     setMaxSpeed(val, function() {});
 };
@@ -1167,7 +1152,7 @@ containerUploadButton.onclick = function() {
         setErrorMessage(msg('popupInvalidFileType'));
         return;
     }
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > MAX_CONTAINER_SIZE) {
         setErrorMessage(msg('popupFileTooLarge'));
         return;
     }

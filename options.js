@@ -1,32 +1,33 @@
 import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig } from './js/storage.js';
+import { FEEDBACK_TIMEOUT } from './js/constants.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
 import { initLocale, setLocale, getLocale, applyI18n, msg } from './js/i18n.js';
 import { testTelegramConfig } from './js/telegram.js';
 
 initLocale().then(function () { applyI18n(); });
 
-let serverNameInput = document.getElementById('serverName');
-let serverListDiv = document.getElementById('serverListDiv');
-let addServerButton = document.getElementById('addServerButton');
-let usernameInput = document.getElementById('username');
-let passwordInput = document.getElementById('password');
-let serverIpInput = document.getElementById('serverIp');
-let serverPortInput = document.getElementById('serverPort');
-let serverPathInput = document.getElementById('serverPath');
-let useHTTPSInput = document.getElementById('useHTTPS');
-let spinnerDiv = document.getElementById('spinnerDiv');
-let loginStatusOKDiv = document.getElementById('loginStatusOK');
-let loginStatusKODiv = document.getElementById('loginStatusKO');
-let currentURL = document.getElementById('currentURL');
+const serverNameInput = document.getElementById('serverName');
+const serverListDiv = document.getElementById('serverListDiv');
+const addServerButton = document.getElementById('addServerButton');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const serverIpInput = document.getElementById('serverIp');
+const serverPortInput = document.getElementById('serverPort');
+const serverPathInput = document.getElementById('serverPath');
+const useHTTPSInput = document.getElementById('useHTTPS');
+const spinnerDiv = document.getElementById('spinnerDiv');
+const loginStatusOKDiv = document.getElementById('loginStatusOK');
+const loginStatusKODiv = document.getElementById('loginStatusKO');
+const currentURL = document.getElementById('currentURL');
 
-let saveButton = document.getElementById('saveButton');
-let loginButton = document.getElementById('loginButton');
-let loginButtonModal = document.getElementById('loginButtonModal');
-let alertDanger = document.getElementById('alertDanger');
-let rememberCredentials = document.getElementById('rememberCredentials');
-let rememberWarning = document.getElementById('rememberWarning');
+const saveButton = document.getElementById('saveButton');
+const loginButton = document.getElementById('loginButton');
+const loginButtonModal = document.getElementById('loginButtonModal');
+const alertDanger = document.getElementById('alertDanger');
+const rememberCredentials = document.getElementById('rememberCredentials');
+const rememberWarning = document.getElementById('rememberWarning');
 let loginModalInstance = null;
-let httpWarning = document.getElementById('httpWarning');
+const httpWarning = document.getElementById('httpWarning');
 
 let loginFailures = 0;
 let loginLockedUntil = 0;
@@ -58,7 +59,7 @@ function disableSpinner() {
     while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
 }
 
-function setDangerMessage(message, timeout=3000) {
+function setDangerMessage(message, timeout=FEEDBACK_TIMEOUT) {
     if (!message) {
         alertDanger.hidden = true;
         return;
@@ -336,13 +337,13 @@ addServerButton.onclick = function() {
 
 // --- Hoster Accounts ---
 
-let accountsDiv = document.getElementById('accountsDiv');
-let accountPlugin = document.getElementById('accountPlugin');
-let accountLogin = document.getElementById('accountLogin');
-let accountPassword = document.getElementById('accountPassword');
-let addAccountButton = document.getElementById('addAccountButton');
-let accountFeedback = document.getElementById('accountFeedback');
-let accountSuccess = document.getElementById('accountSuccess');
+const accountsDiv = document.getElementById('accountsDiv');
+const accountPlugin = document.getElementById('accountPlugin');
+const accountLogin = document.getElementById('accountLogin');
+const accountPassword = document.getElementById('accountPassword');
+const addAccountButton = document.getElementById('addAccountButton');
+const accountFeedback = document.getElementById('accountFeedback');
+const accountSuccess = document.getElementById('accountSuccess');
 
 function renderAccounts(accounts) {
     accountsDiv.textContent = '';
@@ -455,15 +456,15 @@ addAccountButton.onclick = function() {
 
 // --- Log Viewer ---
 
-let loadLogButton = document.getElementById('loadLogButton');
-let logOutput = document.getElementById('logOutput');
-let logControls = document.getElementById('logControls');
-let logSearchInput = document.getElementById('logSearchInput');
-let logLevelFilter = document.getElementById('logLevelFilter');
-let logPagination = document.getElementById('logPagination');
-let logPrevBtn = document.getElementById('logPrevBtn');
-let logNextBtn = document.getElementById('logNextBtn');
-let logPageInfo = document.getElementById('logPageInfo');
+const loadLogButton = document.getElementById('loadLogButton');
+const logOutput = document.getElementById('logOutput');
+const logControls = document.getElementById('logControls');
+const logSearchInput = document.getElementById('logSearchInput');
+const logLevelFilter = document.getElementById('logLevelFilter');
+const logPagination = document.getElementById('logPagination');
+const logPrevBtn = document.getElementById('logPrevBtn');
+const logNextBtn = document.getElementById('logNextBtn');
+const logPageInfo = document.getElementById('logPageInfo');
 
 let logAllLines = [];
 let logPageSize = 100;
@@ -512,12 +513,12 @@ logLevelFilter.onchange = function() { logCurrentPage = 0; renderLogPage(); };
 logPrevBtn.onclick = function() { if (logCurrentPage > 0) { logCurrentPage--; renderLogPage(); } };
 logNextBtn.onclick = function() { logCurrentPage++; renderLogPage(); };
 
-let autoRetryToggle = document.getElementById('autoRetryToggle');
+const autoRetryToggle = document.getElementById('autoRetryToggle');
 autoRetryToggle.onchange = function() {
     setAutoRetryEnabled(autoRetryToggle.checked);
 };
 
-let localeSelect = document.getElementById('localeSelect');
+const localeSelect = document.getElementById('localeSelect');
 localeSelect.value = getLocale();
 localeSelect.onchange = function() {
     setLocale(localeSelect.value);
@@ -525,13 +526,13 @@ localeSelect.onchange = function() {
 
 // --- Telegram Notifications ---
 
-let telegramEnabled = document.getElementById('telegramEnabled');
-let telegramBotToken = document.getElementById('telegramBotToken');
-let telegramChatId = document.getElementById('telegramChatId');
-let telegramSaveBtn = document.getElementById('telegramSaveBtn');
-let telegramTestBtn = document.getElementById('telegramTestBtn');
-let telegramFeedback = document.getElementById('telegramFeedback');
-let telegramConfigFields = document.getElementById('telegramConfigFields');
+const telegramEnabled = document.getElementById('telegramEnabled');
+const telegramBotToken = document.getElementById('telegramBotToken');
+const telegramChatId = document.getElementById('telegramChatId');
+const telegramSaveBtn = document.getElementById('telegramSaveBtn');
+const telegramTestBtn = document.getElementById('telegramTestBtn');
+const telegramFeedback = document.getElementById('telegramFeedback');
+const telegramConfigFields = document.getElementById('telegramConfigFields');
 
 function showTelegramFeedback(text, isError) {
     telegramFeedback.textContent = text;

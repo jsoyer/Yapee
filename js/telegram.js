@@ -1,7 +1,7 @@
 import { getTelegramConfig } from './storage.js';
+import { TELEGRAM_TIMEOUT, MIN_SEND_INTERVAL } from './constants.js';
 
 const TELEGRAM_API = 'https://api.telegram.org/bot';
-const MIN_SEND_INTERVAL = 1000;
 let lastSentTime = 0;
 const sendQueue = [];
 let processing = false;
@@ -12,7 +12,7 @@ function escapeHtml(text) {
 
 async function doSend(botToken, chatId, text) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT);
     try {
         const res = await fetch(`${TELEGRAM_API}${botToken}/sendMessage`, {
             method: 'POST',
@@ -72,7 +72,7 @@ export async function testTelegramConfig(botToken, chatId) {
     }
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT);
         const meRes = await fetch(`${TELEGRAM_API}${botToken}/getMe`, {
             signal: controller.signal
         });

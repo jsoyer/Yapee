@@ -1,3 +1,5 @@
+import { HISTORY_MAX } from './constants.js';
+
 export function buildOrigin(protocol, ip, port, path) {
     const host = ip.includes(':') ? `[${ip}]` : ip;
     let o = `${protocol}://${host}:${port}${path}`;
@@ -220,8 +222,6 @@ export function getStats(callback) {
 }
 
 // --- Analytics: Download History (circular buffer, max 1000) ---
-
-const HISTORY_MAX = 1000;
 
 export function addHistoryEntries(entries, callback) {
     if (!entries.length) { if (callback) callback(); return; }
