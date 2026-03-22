@@ -498,6 +498,27 @@
   "optionsLanguageAuto": {
     "message": "Auto (navigateur)"
   },
+  "queueFilterAll": {
+    "message": "Tous"
+  },
+  "queueFilterErrors": {
+    "message": "Erreurs"
+  },
+  "queueFilterAborted": {
+    "message": "Interrompus"
+  },
+  "optionsTheme": {
+    "message": "Theme"
+  },
+  "optionsThemeAuto": {
+    "message": "Auto (syst\u00e8me)"
+  },
+  "optionsThemeLight": {
+    "message": "Clair"
+  },
+  "optionsThemeDark": {
+    "message": "Sombre"
+  },
 
   "optionsTabNotifications": {
     "message": "Notifications"
@@ -555,6 +576,84 @@
   },
   "optionsTelegramSaved": {
     "message": "Param\u00e8tres Telegram enregistr\u00e9s"
+  },
+
+  "optionsDiscordTitle": {
+    "message": "Notifications Discord"
+  },
+  "optionsDiscordDesc": {
+    "message": "Recevoir les notifications via webhook Discord."
+  },
+  "optionsDiscordEnable": {
+    "message": "Activer les notifications Discord"
+  },
+  "optionsDiscordWebhook": {
+    "message": "URL du webhook"
+  },
+  "optionsDiscordWebhookTooltip": {
+    "message": "Creez un webhook dans les parametres de votre canal Discord"
+  },
+  "optionsDiscordTest": {
+    "message": "Tester"
+  },
+  "optionsDiscordTestSuccess": {
+    "message": "Message de test envoye"
+  },
+  "optionsDiscordTestFailed": {
+    "message": "Test echoue : $1",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsDiscordSaved": {
+    "message": "Parametres Discord enregistres"
+  },
+
+  "optionsNtfyTitle": {
+    "message": "Notifications ntfy.sh"
+  },
+  "optionsNtfyDesc": {
+    "message": "Recevoir les notifications via ntfy.sh (push auto-heberge)."
+  },
+  "optionsNtfyEnable": {
+    "message": "Activer les notifications ntfy"
+  },
+  "optionsNtfyServer": {
+    "message": "URL du serveur"
+  },
+  "optionsNtfyTopic": {
+    "message": "Topic"
+  },
+  "optionsNtfyTopicTooltip": {
+    "message": "Choisissez un nom de topic unique pour vos notifications"
+  },
+  "optionsNtfyTest": {
+    "message": "Tester"
+  },
+  "optionsNtfyTestSuccess": {
+    "message": "Message de test envoye"
+  },
+  "optionsNtfyTestFailed": {
+    "message": "Test echoue : $1",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsNtfySaved": {
+    "message": "Parametres ntfy enregistres"
+  },
+
+  "popupDropFiles": {
+    "message": "Deposez vos fichiers DLC/CCF/RSDF ici"
+  },
+  "popupFileUploaded": {
+    "message": "Fichier envoye avec succes"
+  },
+  "popupFileUploadFailed": {
+    "message": "Echec de l'envoi : $1",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
   },
 
   "popupNoFiles": {

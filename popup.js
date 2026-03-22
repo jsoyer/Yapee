@@ -269,6 +269,8 @@ function switchTab(tab) {
 
     statusDiv.hidden = tab !== 'downloads';
     document.getElementById('queueDiv').hidden = tab !== 'queue';
+    const queueFilterBar = document.getElementById('queueFilterBar');
+    if (queueFilterBar) queueFilterBar.hidden = tab !== 'queue';
     batchBar.hidden = tab !== 'queue';
     document.getElementById('collectorDiv').hidden = tab !== 'collector';
     historyDiv.hidden = tab !== 'history';
@@ -360,6 +362,26 @@ downloadsTab.onclick = () => switchTab('downloads');
 queueTab.onclick = () => switchTab('queue');
 collectorTab.onclick = () => switchTab('collector');
 historyTab.onclick = () => switchTab('history');
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        if (e.key === 'Escape') {
+            e.target.blur();
+            searchInput.value = '';
+            searchTerm = '';
+            refreshCurrentView();
+        }
+        return;
+    }
+    switch (e.key) {
+        case '1': switchTab('downloads'); break;
+        case '2': switchTab('queue'); break;
+        case '3': switchTab('collector'); break;
+        case '4': switchTab('history'); break;
+        case '/': e.preventDefault(); searchInput.focus(); break;
+    }
+});
 
 captchaInput.onkeydown = function(e) {
     if (e.key === 'Enter') captchaSubmit.click();
@@ -462,6 +484,70 @@ containerUploadButton.onclick = async function() {
         setErrorMessage(msg('popupUploadError', [error || 'Unknown error']));
     }
 };
+
+// --- Drag & Drop container files ---
+
+const dropZone = document.getElementById('dropZone');
+let dragCounter = 0;
+
+const ACCEPTED_EXTENSIONS = new Set(['dlc', 'ccf', 'rsdf', 'txt']);
+
+document.body.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    dragCounter++;
+    dropZone.hidden = false;
+});
+
+document.body.addEventListener('dragleave', function() {
+    dragCounter--;
+    if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropZone.hidden = true;
+    }
+});
+
+document.body.addEventListener('dragover', function(e) {
+    e.preventDefault();
+});
+
+document.body.addEventListener('drop', async function(e) {
+    e.preventDefault();
+    dragCounter = 0;
+    dropZone.hidden = true;
+
+    const files = Array.from(e.dataTransfer.files).filter(function(f) {
+        const ext = f.name.split('.').pop().toLowerCase();
+        return ACCEPTED_EXTENSIONS.has(ext);
+    });
+
+    if (!files.length) return;
+
+    let successCount = 0;
+    let lastError = '';
+
+    for (const file of files) {
+        if (file.size > MAX_CONTAINER_SIZE) {
+            lastError = msg('popupFileTooLarge');
+            continue;
+        }
+        const { success, error } = await uploadContainer(file);
+        if (success) {
+            successCount++;
+            incrementStat('packagesAdded');
+        } else {
+            lastError = error || 'Unknown error';
+        }
+    }
+
+    if (successCount > 0) {
+        setSuccessMessage(msg('popupFileUploaded'));
+        refreshCurrentView();
+        updateStats();
+    }
+    if (lastError) {
+        setErrorMessage(msg('popupFileUploadFailed', [lastError]));
+    }
+});
 
 // --- Init view modules (after switchTab is defined) ---
 

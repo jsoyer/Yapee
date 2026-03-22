@@ -104,6 +104,14 @@
               <option value="fr">Français</option>
             </select>
           </div>
+          <div class="d-flex align-items-center gap-2 mt-2">
+            <label for="themeSelect" class="small mb-0" data-i18n="optionsTheme">Theme</label>
+            <select id="themeSelect" class="form-select form-select-sm" style="width: auto">
+              <option value="auto" data-i18n="optionsThemeAuto">Auto (system)</option>
+              <option value="light" data-i18n="optionsThemeLight">Light</option>
+              <option value="dark" data-i18n="optionsThemeDark">Dark</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -187,6 +195,76 @@
             <button id="telegramTestBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsTelegramTest">Test</button>
           </div>
           <div id="telegramFeedback" class="mt-2 small" hidden></div>
+        </div>
+
+        <hr class="my-4">
+
+        <h5 data-i18n="optionsDiscordTitle">Discord Notifications</h5>
+        <p class="small text-muted" data-i18n="optionsDiscordDesc">Receive download notifications via Discord webhook.</p>
+
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="discordEnabled">
+          <label class="form-check-label" for="discordEnabled" data-i18n="optionsDiscordEnable">Enable Discord notifications</label>
+        </div>
+
+        <div id="discordConfigFields">
+          <div class="mb-3">
+            <label for="discordWebhookUrl" data-i18n="optionsDiscordWebhook">Webhook URL</label>
+            <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsDiscordWebhookTooltip" title="Create a webhook in your Discord channel settings"></i>
+            <input type="text" class="form-control form-control-sm" id="discordWebhookUrl" placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+          </div>
+
+          <div class="border rounded p-3 mb-3">
+            <div class="fw-bold small mb-2" data-i18n="optionsTelegramEvents">Notify on</div>
+            <div class="form-check"><input type="checkbox" class="form-check-input discord-event" id="dcEvtPackageComplete" data-event="packageComplete" checked><label class="form-check-label" for="dcEvtPackageComplete" data-i18n="optionsTelegramEvtComplete">Download complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input discord-event" id="dcEvtAllComplete" data-event="allComplete" checked><label class="form-check-label" for="dcEvtAllComplete" data-i18n="optionsTelegramEvtAllComplete">All downloads complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input discord-event" id="dcEvtFailed" data-event="failed" checked><label class="form-check-label" for="dcEvtFailed" data-i18n="optionsTelegramEvtFailed">Download failed</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input discord-event" id="dcEvtCaptcha" data-event="captcha" checked><label class="form-check-label" for="dcEvtCaptcha" data-i18n="optionsTelegramEvtCaptcha">Captcha waiting</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input discord-event" id="dcEvtAutoRetry" data-event="autoRetry"><label class="form-check-label" for="dcEvtAutoRetry" data-i18n="optionsTelegramEvtRetry">Auto-retry</label></div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button id="discordSaveBtn" class="btn btn-sm btn-primary" data-i18n="optionsSave">Save</button>
+            <button id="discordTestBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsDiscordTest">Test</button>
+          </div>
+          <div id="discordFeedback" class="mt-2 small" hidden></div>
+        </div>
+
+        <hr class="my-4">
+
+        <h5 data-i18n="optionsNtfyTitle">ntfy.sh Notifications</h5>
+        <p class="small text-muted" data-i18n="optionsNtfyDesc">Receive notifications via ntfy.sh (self-hosted push).</p>
+
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="ntfyEnabled">
+          <label class="form-check-label" for="ntfyEnabled" data-i18n="optionsNtfyEnable">Enable ntfy notifications</label>
+        </div>
+
+        <div id="ntfyConfigFields">
+          <div class="mb-3">
+            <label for="ntfyServerUrl" data-i18n="optionsNtfyServer">Server URL</label>
+            <input type="text" class="form-control form-control-sm" id="ntfyServerUrl" placeholder="https://ntfy.sh" autocomplete="off">
+          </div>
+          <div class="mb-3">
+            <label for="ntfyTopic" data-i18n="optionsNtfyTopic">Topic</label>
+            <i class="fa text-primary fa-info-circle ms-2" data-bs-toggle="tooltip" data-bs-placement="right" data-i18n-title="optionsNtfyTopicTooltip" title="Choose a unique topic name for your notifications"></i>
+            <input type="text" class="form-control form-control-sm" id="ntfyTopic" placeholder="my-yapee-alerts" autocomplete="off">
+          </div>
+
+          <div class="border rounded p-3 mb-3">
+            <div class="fw-bold small mb-2" data-i18n="optionsTelegramEvents">Notify on</div>
+            <div class="form-check"><input type="checkbox" class="form-check-input ntfy-event" id="ntfyEvtPackageComplete" data-event="packageComplete" checked><label class="form-check-label" for="ntfyEvtPackageComplete" data-i18n="optionsTelegramEvtComplete">Download complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input ntfy-event" id="ntfyEvtAllComplete" data-event="allComplete" checked><label class="form-check-label" for="ntfyEvtAllComplete" data-i18n="optionsTelegramEvtAllComplete">All downloads complete</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input ntfy-event" id="ntfyEvtFailed" data-event="failed" checked><label class="form-check-label" for="ntfyEvtFailed" data-i18n="optionsTelegramEvtFailed">Download failed</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input ntfy-event" id="ntfyEvtCaptcha" data-event="captcha" checked><label class="form-check-label" for="ntfyEvtCaptcha" data-i18n="optionsTelegramEvtCaptcha">Captcha waiting</label></div>
+            <div class="form-check"><input type="checkbox" class="form-check-input ntfy-event" id="ntfyEvtAutoRetry" data-event="autoRetry"><label class="form-check-label" for="ntfyEvtAutoRetry" data-i18n="optionsTelegramEvtRetry">Auto-retry</label></div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button id="ntfySaveBtn" class="btn btn-sm btn-primary" data-i18n="optionsSave">Save</button>
+            <button id="ntfyTestBtn" class="btn btn-sm btn-outline-secondary" data-i18n="optionsNtfyTest">Test</button>
+          </div>
+          <div id="ntfyFeedback" class="mt-2 small" hidden></div>
         </div>
       </div>
 

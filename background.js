@@ -1,6 +1,8 @@
 import { pullStoredData, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
 import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile, isLoggedIn, checkURL } from './js/pyload-api.js';
 import { sendTelegramNotification } from './js/telegram.js';
+import { sendDiscordNotification } from './js/discord.js';
+import { sendNtfyNotification } from './js/ntfy.js';
 import { nameFromUrl } from './js/utils.js';
 import { ALARM_PERIOD_MINUTES, INITIAL_RETRY_BACKOFF, MAX_RETRY_BACKOFF, MAX_RETRY_ATTEMPTS } from './js/constants.js';
 
@@ -169,6 +171,8 @@ function processCompletions(lastPackages, currentPackages) {
                 id: `complete-${pid}`
             });
             sendTelegramNotification(pkg.name, chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), 'packageComplete');
+            sendDiscordNotification(pkg.name, chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), 'packageComplete');
+            sendNtfyNotification(pkg.name, chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), 'packageComplete');
             historyBatch.push({
                 timestamp: Date.now(),
                 name: pkg.name,
@@ -201,6 +205,8 @@ function processErrors(errorFids, notifiedErrors, downloads) {
                 id: `error-${fid}`
             });
             sendTelegramNotification(info.name, chrome.i18n.getMessage('bgDownloadFailed', [info.name]), 'failed');
+            sendDiscordNotification(info.name, chrome.i18n.getMessage('bgDownloadFailed', [info.name]), 'failed');
+            sendNtfyNotification(info.name, chrome.i18n.getMessage('bgDownloadFailed', [info.name]), 'failed');
             historyBatch.push({
                 timestamp: Date.now(),
                 name: info.name,
@@ -246,6 +252,8 @@ async function processRetries(errorFids, activeFids) {
             id: `retry-${fid}`
         });
         sendTelegramNotification(info.name, chrome.i18n.getMessage('bgAutoRetried', [info.name]), 'autoRetry');
+        sendDiscordNotification(info.name, chrome.i18n.getMessage('bgAutoRetried', [info.name]), 'autoRetry');
+        sendNtfyNotification(info.name, chrome.i18n.getMessage('bgAutoRetried', [info.name]), 'autoRetry');
     }
 
     for (const fid of Object.keys(retryQueue)) {
@@ -277,6 +285,8 @@ async function updateBadgeAndCaptcha(currentCount, downloads, lastCaptcha) {
             id: 'captchaWaiting'
         });
         sendTelegramNotification('', chrome.i18n.getMessage('bgCaptchaWaiting'), 'captcha');
+        sendDiscordNotification('', chrome.i18n.getMessage('bgCaptchaWaiting'), 'captcha');
+        sendNtfyNotification('', chrome.i18n.getMessage('bgCaptchaWaiting'), 'captcha');
     }
 
     // Progress notification for top 3 active downloads
@@ -366,6 +376,8 @@ async function doCheckDownloads() {
             buttons: [{ title: chrome.i18n.getMessage('bgClearFinished') || 'Clear finished' }]
         });
         sendTelegramNotification('', chrome.i18n.getMessage('bgDownloadsComplete'), 'allComplete');
+        sendDiscordNotification('', chrome.i18n.getMessage('bgDownloadsComplete'), 'allComplete');
+        sendNtfyNotification('', chrome.i18n.getMessage('bgDownloadsComplete'), 'allComplete');
     }
 
     // Feature 2: Error notifications + history tracking

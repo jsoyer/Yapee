@@ -306,3 +306,74 @@ export async function setTelegramConfig(config) {
         }
     });
 }
+
+// --- Discord Notification Config ---
+
+const DISCORD_DEFAULTS = {
+    enabled: false,
+    webhookUrl: '',
+    events: {
+        packageComplete: true,
+        allComplete: true,
+        failed: true,
+        captcha: true,
+        autoRetry: false
+    }
+};
+
+export async function getDiscordConfig() {
+    const data = await chrome.storage.local.get(['discordConfig']);
+    const raw = data.discordConfig ?? {};
+    return {
+        webhookUrl: raw.webhookUrl ?? '',
+        enabled: raw.enabled ?? false,
+        events: { ...DISCORD_DEFAULTS.events, ...raw.events }
+    };
+}
+
+export async function setDiscordConfig(config) {
+    await chrome.storage.local.set({
+        discordConfig: {
+            webhookUrl: config.webhookUrl ?? '',
+            enabled: !!config.enabled,
+            events: { ...DISCORD_DEFAULTS.events, ...config.events }
+        }
+    });
+}
+
+// --- ntfy Notification Config ---
+
+const NTFY_DEFAULTS = {
+    enabled: false,
+    serverUrl: 'https://ntfy.sh',
+    topic: '',
+    events: {
+        packageComplete: true,
+        allComplete: true,
+        failed: true,
+        captcha: true,
+        autoRetry: false
+    }
+};
+
+export async function getNtfyConfig() {
+    const data = await chrome.storage.local.get(['ntfyConfig']);
+    const raw = data.ntfyConfig ?? {};
+    return {
+        serverUrl: raw.serverUrl ?? 'https://ntfy.sh',
+        topic: raw.topic ?? '',
+        enabled: raw.enabled ?? false,
+        events: { ...NTFY_DEFAULTS.events, ...raw.events }
+    };
+}
+
+export async function setNtfyConfig(config) {
+    await chrome.storage.local.set({
+        ntfyConfig: {
+            serverUrl: config.serverUrl ?? 'https://ntfy.sh',
+            topic: config.topic ?? '',
+            enabled: !!config.enabled,
+            events: { ...NTFY_DEFAULTS.events, ...config.events }
+        }
+    });
+}

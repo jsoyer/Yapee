@@ -8,9 +8,13 @@ const batchCount = document.getElementById('batchCount');
 const batchDeleteBtn = document.getElementById('batchDeleteBtn');
 const selectAllQueue = document.getElementById('selectAllQueue');
 const existingPackageSelect = document.getElementById('existingPackageSelect');
+const queueEtaSpan = document.getElementById('queueEta');
 
 // Module-local drag state
 let dragSrcIndex = null;
+
+// Queue status filter: 'all' | 'errors' | 'aborted'
+let queueFilter = 'all';
 
 // selectedPids is owned by popup.js; we receive it by reference and mutate it in place
 let selectedPids = null;
@@ -323,13 +327,69 @@ function updateBatchBar() {
     else selectAllQueue.indeterminate = true;
 }
 
+function renderQueueFilterBar() {
+    const existing = document.getElementById('queueFilterBar');
+    if (existing) {
+        // Update active state only
+        existing.querySelectorAll('button[data-filter]').forEach(function(btn) {
+            btn.className = btn.dataset.filter === queueFilter
+                ? 'btn btn-sm btn-primary'
+                : 'btn btn-sm btn-outline-secondary';
+        });
+        return;
+    }
+
+    const bar = document.createElement('div');
+    bar.id = 'queueFilterBar';
+    bar.className = 'd-flex gap-1 mb-2';
+    bar.style.fontSize = 'small';
+
+    [
+        { key: 'all', label: msg('queueFilterAll') },
+        { key: 'errors', label: msg('queueFilterErrors') },
+        { key: 'aborted', label: msg('queueFilterAborted') }
+    ].forEach(function({ key, label }) {
+        const btn = document.createElement('button');
+        btn.className = key === queueFilter ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-outline-secondary';
+        btn.dataset.filter = key;
+        btn.textContent = label;
+        btn.onclick = function() {
+            queueFilter = key;
+            updateQueueView();
+        };
+        bar.appendChild(btn);
+    });
+
+    // Insert the filter bar before queueDiv
+    queueDiv.before(bar);
+}
+
 export async function updateQueueView(searchTerm) {
     const packages = await getQueuePackages();
     queueDiv.replaceChildren();
 
-    const filtered = searchTerm
+    renderQueueFilterBar();
+
+    let filtered = searchTerm
         ? packages.filter(p => p.name.toLowerCase().includes(searchTerm))
         : packages;
+
+    // Apply status filter
+    if (queueFilter === 'errors') {
+        filtered = filtered.filter(function(pkg) {
+            return (pkg.links || []).some(function(link) {
+                const s = (link.statusmsg ?? link.status ?? '').toString().toLowerCase();
+                return s === 'failed' || s === 'offline';
+            });
+        });
+    } else if (queueFilter === 'aborted') {
+        filtered = filtered.filter(function(pkg) {
+            return (pkg.links || []).some(function(link) {
+                const s = (link.statusmsg ?? link.status ?? '').toString().toLowerCase();
+                return s === 'aborted';
+            });
+        });
+    }
 
     if (!filtered.length) {
         const empty = document.createElement('div');
@@ -337,6 +397,7 @@ export async function updateQueueView(searchTerm) {
         empty.textContent = msg('popupQueueEmpty');
         queueDiv.appendChild(empty);
         batchBar.hidden = true;
+        if (queueEtaSpan) queueEtaSpan.textContent = '';
         return;
     }
 
@@ -352,6 +413,12 @@ export async function updateQueueView(searchTerm) {
 
     batchBar.hidden = false;
     updateBatchBar();
+
+    // Update queue ETA span with total file count
+    if (queueEtaSpan) {
+        const totalFiles = filtered.reduce(function(sum, pkg) { return sum + (pkg.links?.length ?? 0); }, 0);
+        queueEtaSpan.textContent = totalFiles > 0 ? `${totalFiles} file${totalFiles === 1 ? '' : 's'}` : '';
+    }
 
     // Populate existing-package dropdown for add-to-existing feature
     existingPackageSelect.hidden = false;

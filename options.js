@@ -1,8 +1,11 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig } from './js/storage.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig, getDiscordConfig, setDiscordConfig, getNtfyConfig, setNtfyConfig } from './js/storage.js';
+import { getThemeMode, setThemeMode } from './js/theme-api.js';
 import { FEEDBACK_TIMEOUT } from './js/constants.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
 import { initLocale, setLocale, getLocale, applyI18n, msg } from './js/i18n.js';
 import { testTelegramConfig } from './js/telegram.js';
+import { testDiscordWebhook } from './js/discord.js';
+import { testNtfyConfig } from './js/ntfy.js';
 
 initLocale().then(function () { applyI18n(); });
 
@@ -508,6 +511,11 @@ localeSelect.onchange = function() {
     setLocale(localeSelect.value);
 };
 
+const themeSelect = document.getElementById('themeSelect');
+themeSelect.onchange = function() {
+    setThemeMode(themeSelect.value);
+};
+
 // --- Telegram Notifications ---
 
 const telegramEnabled = document.getElementById('telegramEnabled');
@@ -573,11 +581,137 @@ telegramTestBtn.onclick = async function() {
     }
 };
 
+// --- Discord Notifications ---
+
+const discordEnabled = document.getElementById('discordEnabled');
+const discordWebhookUrl = document.getElementById('discordWebhookUrl');
+const discordSaveBtn = document.getElementById('discordSaveBtn');
+const discordTestBtn = document.getElementById('discordTestBtn');
+const discordFeedback = document.getElementById('discordFeedback');
+
+function showDiscordFeedback(text, isError) {
+    discordFeedback.textContent = text;
+    discordFeedback.className = `mt-2 small ${isError ? 'text-danger' : 'text-success'}`;
+    discordFeedback.hidden = false;
+    setTimeout(() => { discordFeedback.hidden = true; }, 5000);
+}
+
+function readDiscordForm() {
+    const events = {};
+    document.querySelectorAll('.discord-event').forEach(function(cb) {
+        events[cb.dataset.event] = cb.checked;
+    });
+    return {
+        enabled: discordEnabled.checked,
+        webhookUrl: discordWebhookUrl.value.trim(),
+        events
+    };
+}
+
+async function loadDiscordConfig() {
+    const config = await getDiscordConfig();
+    discordEnabled.checked = config.enabled;
+    discordWebhookUrl.value = config.webhookUrl;
+    document.querySelectorAll('.discord-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
+    });
+}
+
+discordSaveBtn.onclick = async function() {
+    discordSaveBtn.disabled = true;
+    await setDiscordConfig(readDiscordForm());
+    discordSaveBtn.disabled = false;
+    showDiscordFeedback(msg('optionsDiscordSaved'), false);
+};
+
+discordTestBtn.onclick = async function() {
+    discordTestBtn.disabled = true;
+    const spin = document.createElement('span');
+    spin.className = 'spinner-border spinner-border-sm';
+    discordTestBtn.replaceChildren(spin);
+    const form = readDiscordForm();
+    const result = await testDiscordWebhook(form.webhookUrl);
+    discordTestBtn.disabled = false;
+    discordTestBtn.textContent = msg('optionsDiscordTest');
+    if (result.ok) {
+        showDiscordFeedback(msg('optionsDiscordTestSuccess'), false);
+    } else {
+        showDiscordFeedback(msg('optionsDiscordTestFailed', [result.error]), true);
+    }
+};
+
+// --- ntfy Notifications ---
+
+const ntfyEnabled = document.getElementById('ntfyEnabled');
+const ntfyServerUrl = document.getElementById('ntfyServerUrl');
+const ntfyTopic = document.getElementById('ntfyTopic');
+const ntfySaveBtn = document.getElementById('ntfySaveBtn');
+const ntfyTestBtn = document.getElementById('ntfyTestBtn');
+const ntfyFeedback = document.getElementById('ntfyFeedback');
+
+function showNtfyFeedback(text, isError) {
+    ntfyFeedback.textContent = text;
+    ntfyFeedback.className = `mt-2 small ${isError ? 'text-danger' : 'text-success'}`;
+    ntfyFeedback.hidden = false;
+    setTimeout(() => { ntfyFeedback.hidden = true; }, 5000);
+}
+
+function readNtfyForm() {
+    const events = {};
+    document.querySelectorAll('.ntfy-event').forEach(function(cb) {
+        events[cb.dataset.event] = cb.checked;
+    });
+    return {
+        enabled: ntfyEnabled.checked,
+        serverUrl: ntfyServerUrl.value.trim() || 'https://ntfy.sh',
+        topic: ntfyTopic.value.trim(),
+        events
+    };
+}
+
+async function loadNtfyConfig() {
+    const config = await getNtfyConfig();
+    ntfyEnabled.checked = config.enabled;
+    ntfyServerUrl.value = config.serverUrl;
+    ntfyTopic.value = config.topic;
+    document.querySelectorAll('.ntfy-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
+    });
+}
+
+ntfySaveBtn.onclick = async function() {
+    ntfySaveBtn.disabled = true;
+    await setNtfyConfig(readNtfyForm());
+    ntfySaveBtn.disabled = false;
+    showNtfyFeedback(msg('optionsNtfySaved'), false);
+};
+
+ntfyTestBtn.onclick = async function() {
+    ntfyTestBtn.disabled = true;
+    const spin = document.createElement('span');
+    spin.className = 'spinner-border spinner-border-sm';
+    ntfyTestBtn.replaceChildren(spin);
+    const form = readNtfyForm();
+    const result = await testNtfyConfig(form.serverUrl, form.topic);
+    ntfyTestBtn.disabled = false;
+    ntfyTestBtn.textContent = msg('optionsNtfyTest');
+    if (result.ok) {
+        showNtfyFeedback(msg('optionsNtfyTestSuccess'), false);
+    } else {
+        showNtfyFeedback(msg('optionsNtfyTestFailed', [result.error]), true);
+    }
+};
+
 (async function() {
     await loadLoginRateLimit();
     await pullStoredData();
     await initLocale();
     localeSelect.value = getLocale();
+    themeSelect.value = await getThemeMode();
     applyI18n();
     renderServerList();
     updateForm();
@@ -592,6 +726,8 @@ telegramTestBtn.onclick = async function() {
     autoRetryToggle.checked = enabled;
 
     await loadTelegramConfig();
+    await loadDiscordConfig();
+    await loadNtfyConfig();
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
