@@ -723,5 +723,81 @@
   "optionsLanguageAuto": {
     "message": "Auto (browser)",
     "description": "Language auto-detect option"
+  },
+
+  "optionsTabNotifications": {
+    "message": "Notifications",
+    "description": "Notifications tab label"
+  },
+  "optionsTelegramTitle": {
+    "message": "Telegram Notifications",
+    "description": "Telegram section heading"
+  },
+  "optionsTelegramDesc": {
+    "message": "Receive download notifications via Telegram bot.",
+    "description": "Telegram section description"
+  },
+  "optionsTelegramEnable": {
+    "message": "Enable Telegram notifications",
+    "description": "Master toggle label"
+  },
+  "optionsTelegramToken": {
+    "message": "Bot Token",
+    "description": "Bot token input label"
+  },
+  "optionsTelegramTokenTooltip": {
+    "message": "Create a bot via @BotFather on Telegram",
+    "description": "Bot token tooltip"
+  },
+  "optionsTelegramChatId": {
+    "message": "Chat ID",
+    "description": "Chat ID input label"
+  },
+  "optionsTelegramChatIdTooltip": {
+    "message": "Send /start to your bot, then use @userinfobot to find your ID",
+    "description": "Chat ID tooltip"
+  },
+  "optionsTelegramEvents": {
+    "message": "Notify on",
+    "description": "Event toggles heading"
+  },
+  "optionsTelegramEvtComplete": {
+    "message": "Download complete",
+    "description": "Package complete event toggle"
+  },
+  "optionsTelegramEvtAllComplete": {
+    "message": "All downloads complete",
+    "description": "All complete event toggle"
+  },
+  "optionsTelegramEvtFailed": {
+    "message": "Download failed",
+    "description": "Download failed event toggle"
+  },
+  "optionsTelegramEvtCaptcha": {
+    "message": "Captcha waiting",
+    "description": "Captcha waiting event toggle"
+  },
+  "optionsTelegramEvtRetry": {
+    "message": "Auto-retry",
+    "description": "Auto-retry event toggle"
+  },
+  "optionsTelegramTest": {
+    "message": "Test",
+    "description": "Test button label"
+  },
+  "optionsTelegramTestSuccess": {
+    "message": "Test message sent successfully",
+    "description": "Test success feedback"
+  },
+  "optionsTelegramTestFailed": {
+    "message": "Test failed: $1",
+    "description": "Test failure feedback",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsTelegramSaved": {
+    "message": "Telegram settings saved",
+    "description": "Save success feedback"
   }
 }

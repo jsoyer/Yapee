@@ -497,5 +497,63 @@
   },
   "optionsLanguageAuto": {
     "message": "Auto (navigateur)"
+  },
+
+  "optionsTabNotifications": {
+    "message": "Notifications"
+  },
+  "optionsTelegramTitle": {
+    "message": "Notifications Telegram"
+  },
+  "optionsTelegramDesc": {
+    "message": "Recevoir les notifications de t\u00e9l\u00e9chargement via un bot Telegram."
+  },
+  "optionsTelegramEnable": {
+    "message": "Activer les notifications Telegram"
+  },
+  "optionsTelegramToken": {
+    "message": "Token du bot"
+  },
+  "optionsTelegramTokenTooltip": {
+    "message": "Cr\u00e9ez un bot via @BotFather sur Telegram"
+  },
+  "optionsTelegramChatId": {
+    "message": "ID du chat"
+  },
+  "optionsTelegramChatIdTooltip": {
+    "message": "Envoyez /start \u00e0 votre bot, puis utilisez @userinfobot pour trouver votre ID"
+  },
+  "optionsTelegramEvents": {
+    "message": "Notifier pour"
+  },
+  "optionsTelegramEvtComplete": {
+    "message": "T\u00e9l\u00e9chargement termin\u00e9"
+  },
+  "optionsTelegramEvtAllComplete": {
+    "message": "Tous les t\u00e9l\u00e9chargements termin\u00e9s"
+  },
+  "optionsTelegramEvtFailed": {
+    "message": "T\u00e9l\u00e9chargement \u00e9chou\u00e9"
+  },
+  "optionsTelegramEvtCaptcha": {
+    "message": "Captcha en attente"
+  },
+  "optionsTelegramEvtRetry": {
+    "message": "Relance automatique"
+  },
+  "optionsTelegramTest": {
+    "message": "Tester"
+  },
+  "optionsTelegramTestSuccess": {
+    "message": "Message de test envoy\u00e9"
+  },
+  "optionsTelegramTestFailed": {
+    "message": "Test \u00e9chou\u00e9 : $1",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsTelegramSaved": {
+    "message": "Param\u00e8tres Telegram enregistr\u00e9s"
   }
 }

@@ -1,5 +1,6 @@
 import { pullStoredData, origin, getAuthHeaders, incrementStat, addHistoryEntries, batchUpdateStats, getRetryQueue, setRetryQueue, isAutoRetryEnabled } from './js/storage.js';
 import { addPackage, getStatusDownloads, isCaptchaWaiting, deleteFinished, togglePause, restartFile } from './js/pyload-api.js';
+import { sendTelegramNotification } from './js/telegram.js';
 
 function nameFromUrl(url) {
     try {
@@ -218,6 +219,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             notify('Yapee', chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), {
                                 id: `complete-${pid}`
                             });
+                            sendTelegramNotification(pkg.name, chrome.i18n.getMessage('bgPackageComplete', [pkg.name]), 'packageComplete');
                             historyBatch.push({
                                 timestamp: Date.now(),
                                 name: pkg.name,
@@ -237,6 +239,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             id: 'downloadsComplete',
                             buttons: [{ title: chrome.i18n.getMessage('bgClearFinished') || 'Clear finished' }]
                         });
+                        sendTelegramNotification('', chrome.i18n.getMessage('bgDownloadsComplete'), 'allComplete');
                     }
 
                     // Feature 2: Error notifications + history tracking
@@ -247,6 +250,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             notify('Yapee', chrome.i18n.getMessage('bgDownloadFailed', [info.name]), {
                                 id: `error-${fid}`
                             });
+                            sendTelegramNotification(info.name, chrome.i18n.getMessage('bgDownloadFailed', [info.name]), 'failed');
                             historyBatch.push({
                                 timestamp: Date.now(),
                                 name: info.name,
@@ -294,6 +298,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                                 notify('Yapee', chrome.i18n.getMessage('bgAutoRetried', [info.name]), {
                                     id: `retry-${fid}`
                                 });
+                                sendTelegramNotification(info.name, chrome.i18n.getMessage('bgAutoRetried', [info.name]), 'autoRetry');
                             }
                             for (const fid of Object.keys(retryQueue)) {
                                 if (!activeFids.has(fid)) {
@@ -321,6 +326,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                             notify('Yapee', chrome.i18n.getMessage('bgCaptchaWaiting'), {
                                 id: 'captchaWaiting'
                             });
+                            sendTelegramNotification('', chrome.i18n.getMessage('bgCaptchaWaiting'), 'captcha');
                         }
 
                         // Feature 4: Progress notification for top 3 active downloads

@@ -1,6 +1,7 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled } from './js/storage.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig } from './js/storage.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
 import { initLocale, setLocale, getLocale, applyI18n, msg } from './js/i18n.js';
+import { testTelegramConfig } from './js/telegram.js';
 
 initLocale().then(function () { applyI18n(); });
 
@@ -516,6 +517,71 @@ localeSelect.onchange = function() {
     setLocale(localeSelect.value);
 };
 
+// --- Telegram Notifications ---
+
+let telegramEnabled = document.getElementById('telegramEnabled');
+let telegramBotToken = document.getElementById('telegramBotToken');
+let telegramChatId = document.getElementById('telegramChatId');
+let telegramSaveBtn = document.getElementById('telegramSaveBtn');
+let telegramTestBtn = document.getElementById('telegramTestBtn');
+let telegramFeedback = document.getElementById('telegramFeedback');
+let telegramConfigFields = document.getElementById('telegramConfigFields');
+
+function showTelegramFeedback(text, isError) {
+    telegramFeedback.textContent = text;
+    telegramFeedback.className = `mt-2 small ${isError ? 'text-danger' : 'text-success'}`;
+    telegramFeedback.hidden = false;
+    setTimeout(() => { telegramFeedback.hidden = true; }, 5000);
+}
+
+function readTelegramForm() {
+    const events = {};
+    document.querySelectorAll('.telegram-event').forEach(function(cb) {
+        events[cb.dataset.event] = cb.checked;
+    });
+    return {
+        enabled: telegramEnabled.checked,
+        botToken: telegramBotToken.value,
+        chatId: telegramChatId.value.trim(),
+        events
+    };
+}
+
+function loadTelegramConfig() {
+    getTelegramConfig(function(config) {
+        telegramEnabled.checked = config.enabled;
+        telegramBotToken.value = config.botToken;
+        telegramChatId.value = config.chatId;
+        document.querySelectorAll('.telegram-event').forEach(function(cb) {
+            if (config.events.hasOwnProperty(cb.dataset.event)) {
+                cb.checked = config.events[cb.dataset.event];
+            }
+        });
+    });
+}
+
+telegramSaveBtn.onclick = function() {
+    telegramSaveBtn.disabled = true;
+    setTelegramConfig(readTelegramForm(), function() {
+        telegramSaveBtn.disabled = false;
+        showTelegramFeedback(msg('optionsTelegramSaved'), false);
+    });
+};
+
+telegramTestBtn.onclick = async function() {
+    telegramTestBtn.disabled = true;
+    telegramTestBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    const form = readTelegramForm();
+    const result = await testTelegramConfig(form.botToken, form.chatId);
+    telegramTestBtn.disabled = false;
+    telegramTestBtn.textContent = msg('optionsTelegramTest');
+    if (result.ok) {
+        showTelegramFeedback(msg('optionsTelegramTestSuccess'), false);
+    } else {
+        showTelegramFeedback(msg('optionsTelegramTestFailed', [result.error]), true);
+    }
+};
+
 loadLoginRateLimit();
 pullStoredData(async function() {
     await initLocale();
@@ -533,6 +599,8 @@ pullStoredData(async function() {
     isAutoRetryEnabled(function(enabled) {
         autoRetryToggle.checked = enabled;
     });
+
+    loadTelegramConfig();
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
