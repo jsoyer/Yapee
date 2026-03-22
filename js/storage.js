@@ -292,6 +292,16 @@ export function setAutoRetryEnabled(enabled, callback) {
     chrome.storage.local.set({ autoRetryEnabled: enabled }, callback);
 }
 
+// --- Session storage Promise wrappers (MV3 native) ---
+
+export function getSessionData(keys) {
+    return chrome.storage.session.get(keys);
+}
+
+export function setSessionData(data) {
+    return chrome.storage.session.set(data);
+}
+
 // --- Telegram Notification Config ---
 
 const TELEGRAM_DEFAULTS = {
