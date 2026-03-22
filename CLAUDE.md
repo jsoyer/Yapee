@@ -1,3 +1,59 @@
+# Yapee — PyLoad Download Manager Extension
+
+## Project
+
+- **Type**: Chrome/Firefox MV3 browser extension
+- **Stack**: Vanilla JavaScript ES modules, Bootstrap 5.3.3, Font Awesome (woff2)
+- **No build system** — files are served directly, no bundler/transpiler
+- **i18n**: EN/FR via `_locales/` + `js/i18n.js` with manual locale override
+
+## Architecture
+
+```
+popup.js              Entry point — tabs, buttons, polling, init (548 lines)
+js/views/
+  downloads.js        Download items view
+  queue.js            Queue with drag & drop, file expansion
+  collector.js        Collector staging area
+  history.js          History + stats dashboard
+background.js         Service worker — notifications, badge, retry (async/await)
+js/
+  pyload-api.js       All PyLoad API calls (apiFetch wrapper, safeInt validation)
+  storage.js          Credential encryption (AES-256-GCM), server config, Telegram config
+  telegram.js         Telegram bot notifications with rate limiting
+  constants.js        Named constants (timeouts, limits, intervals)
+  utils.js            Shared utilities (nameFromUrl, formatBytes, setIcon)
+  i18n.js             Internationalization
+  theme.js            Theme detection (prefers-color-scheme)
+options.html/js       Settings page — servers, accounts, logs, notifications
+content-relay.js      Message relay for companion userscript
+```
+
+## Key Patterns
+
+- **API layer**: All PyLoad calls go through `apiFetch()` in `pyload-api.js` — never raw `fetch()`
+- **Numeric params**: All API functions validate with `safeInt()` before interpolating into URLs
+- **Credentials**: Encrypted with AES-256-GCM in `chrome.storage.local`, key in same storage (known limitation)
+- **Notifications**: `notify()` (browser) + `sendTelegramNotification()` (Telegram) fire in parallel, Telegram is fire-and-forget
+- **State**: `pullStoredData()` must be called before accessing `origin`, `servers`, etc. from storage.js
+- **Callbacks vs Promises**: pyload-api.js and storage.js still use callbacks; background.js alarm handler uses async/await with `new Promise()` wrappers
+
+## Gotchas
+
+- **Dual manifests**: `manifest.json` (Chrome) + `manifest.firefox.json` — hoster domain lists must be synced manually
+- **Userscript hoster list** (`yape-companion.user.js`) has extra entries not in manifests — intentional drift
+- **PyLoad `restartPackage`** only restarts "failed" files, NOT "aborted" — we call `restartFile` per aborted file as a workaround
+- **`connect-src *`** in CSP is required because the user's PyLoad server address is dynamic
+- **Font Awesome CSS** (`css/all.min.css`) still references .eot/.svg/.ttf/.woff formats that were deleted — browsers fall back to woff2 silently
+
+## Roadmap
+
+See `tasks/roadmap.md` for backlog and done items.
+
+---
+
+# Behavior Instructions
+
 ### 1. Plan Mode Default
 - Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
 - If something goes sideways, STOP and re-plan immediately — don't keep pushing

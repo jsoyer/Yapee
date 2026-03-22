@@ -218,7 +218,7 @@
     function isHosterUrl(href) {
         try {
             const host = new URL(href).hostname.replace(/^www\./, '');
-            return HOSTERS.some(h => host === h || host.endsWith('.' + h));
+            return HOSTERS.some(h => host === h || host.endsWith(`.${h}`));
         } catch {
             return false;
         }

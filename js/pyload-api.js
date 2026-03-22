@@ -1,4 +1,9 @@
+// Error return convention:
+//   list-returning functions  → []
+//   object-returning functions → null
+//   boolean/success functions  → false
 import { origin, setCredentials, getAuthHeaders } from './storage.js';
+import { API_TIMEOUT, UPLOAD_TIMEOUT } from './constants.js';
 
 let serverStatusController = null;
 
@@ -9,24 +14,25 @@ export function abortServerStatus() {
     }
 }
 
-async function apiFetch(path, onSuccess, onError, method = 'GET') {
+async function apiFetch(path, method = 'GET') {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     try {
         const res = await fetch(`${origin}${path}`, {
             method, redirect: 'error', headers: { ...getAuthHeaders() }, signal: controller.signal, credentials: 'omit'
         });
         clearTimeout(timeoutId);
-        await onSuccess(res);
+        if (!res.ok) return null;
+        return res;
     } catch {
         clearTimeout(timeoutId);
-        if (onError) onError();
+        return null;
     }
 }
 
-export async function getServerStatus(callback) {
+export async function getServerStatus() {
     serverStatusController = new AbortController();
-    const timeoutId = setTimeout(() => serverStatusController.abort(), 5000);
+    const timeoutId = setTimeout(() => serverStatusController.abort(), API_TIMEOUT);
     try {
         const res = await fetch(`${origin}/api/statusServer`, {
             method: 'GET',
@@ -38,161 +44,181 @@ export async function getServerStatus(callback) {
         clearTimeout(timeoutId);
         serverStatusController = null;
         try {
-            if (res.status === 404) { if (callback) callback(false, false, 'Server not found'); return; }
+            if (res.status === 404) return { success: false, unauthorized: false, error: 'Server not found' };
             const response = await res.json();
-            if (res.status === 200) { if (callback) callback(true, false, null, response); }
-            else if (res.status === 401 || res.status === 403) { if (callback) callback(false, true, 'Unauthorized', response); }
-            else if (Object.hasOwn(response, 'error')) { if (callback) callback(false, false, response.error); }
-            else { if (callback) callback(false, false, null, response); }
-        } catch { if (callback) callback(false, false, 'Server unreachable'); }
+            if (res.status === 200) return { success: true, unauthorized: false, error: null, response };
+            if (res.status === 401 || res.status === 403) return { success: false, unauthorized: true, error: 'Unauthorized', response };
+            if (Object.hasOwn(response, 'error')) return { success: false, unauthorized: false, error: response.error };
+            return { success: false, unauthorized: false, error: null, response };
+        } catch {
+            return { success: false, unauthorized: false, error: 'Server unreachable' };
+        }
     } catch {
         clearTimeout(timeoutId);
         serverStatusController = null;
-        if (callback) callback(false, false, 'Server unreachable');
+        return { success: false, unauthorized: false, error: 'Server unreachable' };
     }
 }
 
-export function login(u, p, remember, callback) {
-    setCredentials(u, p, remember, () => {
-        getServerStatus(function(success, unauthorized, error) {
-            if (success) {
-                if (callback) callback(true);
-            } else if (unauthorized) {
-                setCredentials('', '', false, () => {});
-                if (callback) callback(false, 'Login failed, invalid credentials');
-            } else {
-                setCredentials('', '', false, () => {});
-                if (callback) callback(false, error || 'Login failed, server unreachable');
-            }
+export async function login(u, p, remember) {
+    await setCredentials(u, p, remember);
+    const result = await getServerStatus();
+    if (result.success) {
+        return { success: true };
+    } else if (result.unauthorized) {
+        await setCredentials('', '', false);
+        return { success: false, error: 'Login failed, invalid credentials' };
+    } else {
+        await setCredentials('', '', false);
+        return { success: false, error: result.error || 'Login failed, server unreachable' };
+    }
+}
+
+export async function getStatusDownloads() {
+    try {
+        const res = await apiFetch('/api/statusDownloads');
+        return res ? await res.json() : [];
+    } catch {
+        return [];
+    }
+}
+
+export async function getQueueData() {
+    try {
+        const res = await apiFetch('/api/getQueueData');
+        if (!res) return [];
+        const queueData = await res.json();
+        const urls = [];
+        queueData.forEach(pack => {
+            pack.links.forEach(link => { urls.push(link.url); });
         });
-    });
+        return urls;
+    } catch {
+        return [];
+    }
 }
 
-export async function getStatusDownloads(callback) {
-    apiFetch('/api/statusDownloads',
-        async res => { callback(await res.json()); },
-        () => callback([])
-    );
+export async function getLimitSpeedStatus() {
+    try {
+        const res = await apiFetch('/api/getConfigValue?category="download"&option="limit_speed"');
+        return res ? (await res.json()).toLowerCase() === 'true' : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getQueueData(callback) {
-    apiFetch('/api/getQueueData',
-        async res => {
-            const queueData = await res.json();
-            const urls = [];
-            queueData.forEach(pack => {
-                pack.links.forEach(link => { urls.push(link.url); });
-            });
-            callback(urls);
-        },
-        () => callback([])
-    );
+export async function setLimitSpeedStatus(limitSpeed) {
+    try {
+        const res = await apiFetch(`/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`);
+        return res ? await res.json() : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getLimitSpeedStatus(callback) {
-    apiFetch('/api/getConfigValue?category="download"&option="limit_speed"',
-        async res => { callback((await res.json()).toLowerCase() === 'true'); },
-        () => callback(false)
-    );
+export async function getMaxSpeed() {
+    try {
+        const res = await apiFetch('/api/getConfigValue?category="download"&option="max_speed"');
+        return res ? (parseInt(await res.json(), 10) || 0) : 0;
+    } catch {
+        return 0;
+    }
 }
 
-export async function setLimitSpeedStatus(limitSpeed, callback) {
-    apiFetch(`/api/setConfigValue?category="download"&option="limit_speed"&value="${limitSpeed}"`,
-        async res => { callback(await res.json()); },
-        () => callback(false)
-    );
+export async function setMaxSpeed(speed) {
+    try {
+        const res = await apiFetch(`/api/setConfigValue?category="download"&option="max_speed"&value="${speed}"`);
+        return res ? await res.json() : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getMaxSpeed(callback) {
-    apiFetch('/api/getConfigValue?category="download"&option="max_speed"',
-        async res => { callback(parseInt(await res.json(), 10) || 0); },
-        () => callback(0)
-    );
-}
-
-export async function setMaxSpeed(speed, callback) {
-    apiFetch(`/api/setConfigValue?category="download"&option="max_speed"&value="${speed}"`,
-        async res => { callback(await res.json()); },
-        () => callback(false)
-    );
-}
-
-export async function addPackage(name, urls, callback, dest = 1) {
+export async function addPackage(name, urls, dest = 1) {
     const safeName = name.replace(/[^a-z0-9._\-]/gi, '_');
     const linksArray = Array.isArray(urls) ? urls : [urls];
     const linksParam = '[' + linksArray.map(u => `"${encodeURIComponent(u)}"`).join(',') + ']';
     const destParam = dest !== 1 ? `&dest=${dest}` : '';
-    apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=${linksParam}${destParam}`,
-        async res => {
-            const response = await res.json();
-            if (Object.hasOwn(response, 'error')) {
-                callback(false, response.error);
-            } else {
-                callback(true);
-            }
-        },
-        () => callback(false, 'Invalid server response'),
-        'POST'
-    );
+    try {
+        const res = await apiFetch(`/api/addPackage?name="${encodeURIComponent(safeName)}"&links=${linksParam}${destParam}`, 'POST');
+        if (!res) return { success: false, error: 'Invalid server response' };
+        const response = await res.json();
+        if (Object.hasOwn(response, 'error')) {
+            return { success: false, error: response.error };
+        }
+        return { success: true };
+    } catch {
+        return { success: false, error: 'Invalid server response' };
+    }
 }
 
-export async function togglePause(callback) {
-    apiFetch('/api/togglePause',
-        async res => { callback(await res.json()); },
-        () => callback(null)
-    );
+export async function togglePause() {
+    try {
+        const res = await apiFetch('/api/togglePause');
+        return res ? await res.json() : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function freeSpace(callback) {
-    apiFetch('/api/freeSpace',
-        async res => { callback(await res.json()); },
-        () => callback(null)
-    );
+export async function freeSpace() {
+    try {
+        const res = await apiFetch('/api/freeSpace');
+        return res ? await res.json() : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function deleteFinished(callback) {
-    apiFetch('/api/deleteFinished',
-        async res => { callback(true, await res.json()); },
-        () => callback(false)
-    );
+export async function deleteFinished() {
+    try {
+        const res = await apiFetch('/api/deleteFinished');
+        return !!res;
+    } catch {
+        return false;
+    }
 }
 
-export async function restartFailed(callback) {
-    apiFetch('/api/restartFailed',
-        res => callback(res.ok),
-        () => callback(false)
-    );
+export async function restartFailed() {
+    try {
+        const res = await apiFetch('/api/restartFailed');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function stopAllDownloads(callback) {
-    apiFetch('/api/stopAllDownloads',
-        res => callback(res.ok),
-        () => callback(false)
-    );
+export async function stopAllDownloads() {
+    try {
+        const res = await apiFetch('/api/stopAllDownloads');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function isCaptchaWaiting(callback) {
-    apiFetch('/api/isCaptchaWaiting',
-        async res => { callback(!!(await res.json())); },
-        () => callback(false)
-    );
+export async function isCaptchaWaiting() {
+    try {
+        const res = await apiFetch('/api/isCaptchaWaiting');
+        return res ? !!(await res.json()) : false;
+    } catch {
+        return false;
+    }
 }
 
-export function isLoggedIn(callback) {
-    getServerStatus(function(success, unauthorized, error, response) {
-        if (callback) callback(success, unauthorized, error, response);
-    });
+export async function isLoggedIn() {
+    return await getServerStatus();
 }
 
-export async function checkURL(url, callback) {
-    apiFetch(`/api/checkURLs?urls=["${encodeURIComponent(url)}"]`,
-        async res => {
-            const response = await res.json();
-            callback(!Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error'));
-        },
-        () => callback(false),
-        'POST'
-    );
+export async function checkURL(url) {
+    try {
+        const res = await apiFetch(`/api/checkURLs?urls=["${encodeURIComponent(url)}"]`, 'POST');
+        if (!res) return false;
+        const response = await res.json();
+        return !Object.hasOwn(response, 'BasePlugin') && !Object.hasOwn(response, 'error');
+    } catch {
+        return false;
+    }
 }
 
 function safeInt(value) {
@@ -200,191 +226,225 @@ function safeInt(value) {
     return isNaN(n) ? null : n;
 }
 
-export async function stopDownload(fid, callback) {
+export async function stopDownload(fid) {
     const id = safeInt(fid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/stopDownloads?file_ids=[${id}]`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/stopDownloads?file_ids=[${id}]`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function restartFile(fid, callback) {
+export async function restartFile(fid) {
     const id = safeInt(fid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/restartFile?file_id=${id}`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/restartFile?file_id=${id}`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function deletePackage(pid, callback) {
+export async function deletePackage(pid) {
     const id = safeInt(pid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/deletePackages?package_ids=[${id}]`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/deletePackages?package_ids=[${id}]`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function deletePackages(pids, callback) {
+export async function deletePackages(pids) {
     const ids = pids.map(safeInt).filter(n => n !== null);
-    if (!ids.length) { callback(false); return; }
-    apiFetch(`/api/deletePackages?package_ids=[${ids.join(',')}]`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (!ids.length) return false;
+    try {
+        const res = await apiFetch(`/api/deletePackages?package_ids=[${ids.join(',')}]`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function setPackageData(pid, data, callback) {
+export async function setPackageData(pid, data) {
     const id = safeInt(pid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/setPackageData?pid=${id}&data=${encodeURIComponent(JSON.stringify(data))}`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/setPackageData?pid=${id}&data=${encodeURIComponent(JSON.stringify(data))}`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function addFiles(pid, links, callback) {
+export async function addFiles(pid, links) {
     const id = safeInt(pid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/addFiles?pid=${id}&links=${encodeURIComponent(JSON.stringify(links))}`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/addFiles?pid=${id}&links=${encodeURIComponent(JSON.stringify(links))}`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function restartPackage(pid, callback) {
+export async function restartPackage(pid) {
     const id = safeInt(pid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/restartPackage?pid=${id}`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/restartPackage?pid=${id}`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getCollectorData(callback) {
-    apiFetch('/api/getCollectorData',
-        async res => { callback(await res.json()); },
-        () => callback([])
-    );
+export async function getCollectorData() {
+    try {
+        const res = await apiFetch('/api/getCollectorData');
+        return res ? await res.json() : [];
+    } catch {
+        return [];
+    }
 }
 
-export async function pushToQueue(pid, callback) {
+export async function pushToQueue(pid) {
     const id = safeInt(pid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/pushToQueue?package_id=${id}`,
-        res => callback(res.ok),
-        () => callback(false),
-        'POST'
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/pushToQueue?package_id=${id}`, 'POST');
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getProxyStatus(callback) {
-    apiFetch('/api/getConfigValue?category="reconnect"&option="use_proxy"',
-        async res => {
-            const val = await res.json();
-            callback(String(val).toLowerCase() === 'true');
-        },
-        () => callback(false)
-    );
+export async function getProxyStatus() {
+    try {
+        const res = await apiFetch('/api/getConfigValue?category="reconnect"&option="use_proxy"');
+        if (!res) return false;
+        const val = await res.json();
+        return String(val).toLowerCase() === 'true';
+    } catch {
+        return false;
+    }
 }
 
-export async function toggleProxy(callback) {
-    apiFetch('/api/toggleProxy',
-        async res => { callback(!!(await res.json())); },
-        () => callback(null)
-    );
+export async function toggleProxy() {
+    try {
+        const res = await apiFetch('/api/toggleProxy');
+        return res ? !!(await res.json()) : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function getServerVersion(callback) {
-    apiFetch('/api/getServerVersion',
-        async res => { callback(await res.json()); },
-        () => callback(null)
-    );
+export async function getServerVersion() {
+    try {
+        const res = await apiFetch('/api/getServerVersion');
+        return res ? await res.json() : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function getEvents(uuid, callback) {
-    apiFetch(`/api/getEvents?uuid="${encodeURIComponent(uuid)}"`,
-        async res => { callback(await res.json()); },
-        () => callback(null)
-    );
+export async function getEvents(uuid) {
+    try {
+        const res = await apiFetch(`/api/getEvents?uuid="${encodeURIComponent(uuid)}"`);
+        return res ? await res.json() : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function getQueuePackages(callback) {
-    apiFetch('/api/getQueueData',
-        async res => { callback(await res.json()); },
-        () => callback([])
-    );
+export async function getQueuePackages() {
+    try {
+        const res = await apiFetch('/api/getQueueData');
+        return res ? await res.json() : [];
+    } catch {
+        return [];
+    }
 }
 
-export async function orderPackage(pid, position, callback) {
+export async function orderPackage(pid, position) {
     const id = safeInt(pid);
     const pos = safeInt(position);
-    if (id === null || pos === null) { callback(false); return; }
-    apiFetch(`/api/orderPackage?package_id=${id}&position=${pos}`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+    if (id === null || pos === null) return false;
+    try {
+        const res = await apiFetch(`/api/orderPackage?package_id=${id}&position=${pos}`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getCaptchaTask(callback) {
-    apiFetch('/api/getCaptchaTask?exclusive=true',
-        async res => {
-            const task = await res.json();
-            callback(task && task.tid !== -1 ? task : null);
-        },
-        () => callback(null)
-    );
+export async function getCaptchaTask() {
+    try {
+        const res = await apiFetch('/api/getCaptchaTask?exclusive=true');
+        if (!res) return null;
+        const task = await res.json();
+        return task && task.tid !== -1 ? task : null;
+    } catch {
+        return null;
+    }
 }
 
-export async function setCaptchaResult(tid, result, callback) {
+export async function setCaptchaResult(tid, result) {
     const id = safeInt(tid);
-    if (id === null) { callback(false); return; }
-    apiFetch(`/api/setCaptchaResult?tid=${id}&result="${encodeURIComponent(result)}"`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+    if (id === null) return false;
+    try {
+        const res = await apiFetch(`/api/setCaptchaResult?tid=${id}&result="${encodeURIComponent(result)}"`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getAccounts(callback, refresh = false) {
-    apiFetch(`/api/getAccounts?refresh=${refresh}`,
-        async res => { callback(await res.json()); },
-        () => callback({})
-    );
+export async function getAccounts(refresh = false) {
+    try {
+        const res = await apiFetch(`/api/getAccounts?refresh=${refresh}`);
+        return res ? await res.json() : {};
+    } catch {
+        return {};
+    }
 }
 
-export async function updateAccount(plugin, login, password, callback) {
-    apiFetch(`/api/updateAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"&password="${encodeURIComponent(password)}"`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+export async function updateAccount(plugin, login, password) {
+    try {
+        const res = await apiFetch(`/api/updateAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"&password="${encodeURIComponent(password)}"`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function removeAccount(plugin, login, callback) {
-    apiFetch(`/api/removeAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"`,
-        res => callback(res.ok),
-        () => callback(false)
-    );
+export async function removeAccount(plugin, login) {
+    try {
+        const res = await apiFetch(`/api/removeAccount?plugin="${encodeURIComponent(plugin)}"&account="${encodeURIComponent(login)}"`);
+        return res ? res.ok : false;
+    } catch {
+        return false;
+    }
 }
 
-export async function getLog(offset, callback) {
+export async function getLog(offset) {
     const off = safeInt(offset);
-    if (off === null) { callback([]); return; }
-    apiFetch(`/api/getLog?offset=${off}`,
-        async res => { callback(await res.json()); },
-        () => callback([])
-    );
+    if (off === null) return [];
+    try {
+        const res = await apiFetch(`/api/getLog?offset=${off}`);
+        return res ? await res.json() : [];
+    } catch {
+        return [];
+    }
 }
 
-export async function uploadContainer(file, callback) {
+export async function uploadContainer(file) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT);
     try {
         // Try the direct API endpoint with Basic Auth
         const formData = new FormData();
@@ -399,13 +459,12 @@ export async function uploadContainer(file, callback) {
         });
         clearTimeout(timeoutId);
         if (res.ok && !res.redirected) {
-            callback(true);
-        } else {
-            const text = await res.text().catch(() => 'Server error');
-            callback(false, text || `HTTP ${res.status}`);
+            return { success: true };
         }
+        const text = await res.text().catch(() => 'Server error');
+        return { success: false, error: text || `HTTP ${res.status}` };
     } catch {
         clearTimeout(timeoutId);
-        callback(false, 'Upload failed');
+        return { success: false, error: 'Upload failed' };
     }
 }

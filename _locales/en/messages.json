@@ -724,6 +724,34 @@
     "message": "Auto (browser)",
     "description": "Language auto-detect option"
   },
+  "queueFilterAll": {
+    "message": "All",
+    "description": "Queue filter: show all packages"
+  },
+  "queueFilterErrors": {
+    "message": "Errors",
+    "description": "Queue filter: packages with failed/offline files"
+  },
+  "queueFilterAborted": {
+    "message": "Aborted",
+    "description": "Queue filter: packages with aborted files"
+  },
+  "optionsTheme": {
+    "message": "Theme",
+    "description": "Theme selector label"
+  },
+  "optionsThemeAuto": {
+    "message": "Auto (system)",
+    "description": "Theme auto option"
+  },
+  "optionsThemeLight": {
+    "message": "Light",
+    "description": "Theme light option"
+  },
+  "optionsThemeDark": {
+    "message": "Dark",
+    "description": "Theme dark option"
+  },
 
   "optionsTabNotifications": {
     "message": "Notifications",
@@ -799,6 +827,90 @@
   "optionsTelegramSaved": {
     "message": "Telegram settings saved",
     "description": "Save success feedback"
+  },
+
+  "optionsDiscordTitle": {
+    "message": "Discord Notifications",
+    "description": "Discord section heading"
+  },
+  "optionsDiscordDesc": {
+    "message": "Receive download notifications via Discord webhook.",
+    "description": "Discord section description"
+  },
+  "optionsDiscordEnable": {
+    "message": "Enable Discord notifications",
+    "description": "Discord master toggle label"
+  },
+  "optionsDiscordWebhook": {
+    "message": "Webhook URL",
+    "description": "Discord webhook URL input label"
+  },
+  "optionsDiscordWebhookTooltip": {
+    "message": "Create a webhook in your Discord channel settings",
+    "description": "Discord webhook URL tooltip"
+  },
+  "optionsDiscordTest": {
+    "message": "Test",
+    "description": "Discord test button label"
+  },
+  "optionsDiscordTestSuccess": {
+    "message": "Test message sent successfully",
+    "description": "Discord test success feedback"
+  },
+  "optionsDiscordTestFailed": {
+    "message": "Test failed: $1",
+    "description": "Discord test failure feedback",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsDiscordSaved": {
+    "message": "Discord settings saved",
+    "description": "Discord save success feedback"
+  },
+
+  "optionsNtfyTitle": {
+    "message": "ntfy.sh Notifications",
+    "description": "ntfy section heading"
+  },
+  "optionsNtfyDesc": {
+    "message": "Receive notifications via ntfy.sh (self-hosted push).",
+    "description": "ntfy section description"
+  },
+  "optionsNtfyEnable": {
+    "message": "Enable ntfy notifications",
+    "description": "ntfy master toggle label"
+  },
+  "optionsNtfyServer": {
+    "message": "Server URL",
+    "description": "ntfy server URL input label"
+  },
+  "optionsNtfyTopic": {
+    "message": "Topic",
+    "description": "ntfy topic input label"
+  },
+  "optionsNtfyTopicTooltip": {
+    "message": "Choose a unique topic name for your notifications",
+    "description": "ntfy topic tooltip"
+  },
+  "optionsNtfyTest": {
+    "message": "Test",
+    "description": "ntfy test button label"
+  },
+  "optionsNtfyTestSuccess": {
+    "message": "Test message sent",
+    "description": "ntfy test success feedback"
+  },
+  "optionsNtfyTestFailed": {
+    "message": "Test failed: $1",
+    "description": "ntfy test failure feedback",
+    "placeholders": {
+      "1": { "content": "$1" }
+    }
+  },
+  "optionsNtfySaved": {
+    "message": "ntfy settings saved",
+    "description": "ntfy save success feedback"
   },
 
   "popupNoFiles": {

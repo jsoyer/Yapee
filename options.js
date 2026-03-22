@@ -1,42 +1,44 @@
-import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig } from './js/storage.js';
+import { pullStoredData, setOrigin, origin, serverIp, serverPort, serverProtocol, serverPath, servers, activeServerId, addServer, removeServer, setActiveServer, isAutoRetryEnabled, setAutoRetryEnabled, getTelegramConfig, setTelegramConfig, getDiscordConfig, setDiscordConfig, getNtfyConfig, setNtfyConfig } from './js/storage.js';
+import { getThemeMode, setThemeMode } from './js/theme-api.js';
+import { FEEDBACK_TIMEOUT } from './js/constants.js';
 import { login, isLoggedIn, abortServerStatus, getAccounts, updateAccount, removeAccount, getLog } from './js/pyload-api.js';
 import { initLocale, setLocale, getLocale, applyI18n, msg } from './js/i18n.js';
 import { testTelegramConfig } from './js/telegram.js';
+import { testDiscordWebhook } from './js/discord.js';
+import { testNtfyConfig } from './js/ntfy.js';
 
 initLocale().then(function () { applyI18n(); });
 
-let serverNameInput = document.getElementById('serverName');
-let serverListDiv = document.getElementById('serverListDiv');
-let addServerButton = document.getElementById('addServerButton');
-let usernameInput = document.getElementById('username');
-let passwordInput = document.getElementById('password');
-let serverIpInput = document.getElementById('serverIp');
-let serverPortInput = document.getElementById('serverPort');
-let serverPathInput = document.getElementById('serverPath');
-let useHTTPSInput = document.getElementById('useHTTPS');
-let spinnerDiv = document.getElementById('spinnerDiv');
-let loginStatusOKDiv = document.getElementById('loginStatusOK');
-let loginStatusKODiv = document.getElementById('loginStatusKO');
-let currentURL = document.getElementById('currentURL');
+const serverNameInput = document.getElementById('serverName');
+const serverListDiv = document.getElementById('serverListDiv');
+const addServerButton = document.getElementById('addServerButton');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const serverIpInput = document.getElementById('serverIp');
+const serverPortInput = document.getElementById('serverPort');
+const serverPathInput = document.getElementById('serverPath');
+const useHTTPSInput = document.getElementById('useHTTPS');
+const spinnerDiv = document.getElementById('spinnerDiv');
+const loginStatusOKDiv = document.getElementById('loginStatusOK');
+const loginStatusKODiv = document.getElementById('loginStatusKO');
+const currentURL = document.getElementById('currentURL');
 
-let saveButton = document.getElementById('saveButton');
-let loginButton = document.getElementById('loginButton');
-let loginButtonModal = document.getElementById('loginButtonModal');
-let alertDanger = document.getElementById('alertDanger');
-let rememberCredentials = document.getElementById('rememberCredentials');
-let rememberWarning = document.getElementById('rememberWarning');
+const saveButton = document.getElementById('saveButton');
+const loginButton = document.getElementById('loginButton');
+const loginButtonModal = document.getElementById('loginButtonModal');
+const alertDanger = document.getElementById('alertDanger');
+const rememberCredentials = document.getElementById('rememberCredentials');
+const rememberWarning = document.getElementById('rememberWarning');
 let loginModalInstance = null;
-let httpWarning = document.getElementById('httpWarning');
+const httpWarning = document.getElementById('httpWarning');
 
 let loginFailures = 0;
 let loginLockedUntil = 0;
 
-function loadLoginRateLimit(callback) {
-    chrome.storage.session.get(['loginFailures', 'loginLockedUntil'], function(data) {
-        loginFailures = data.loginFailures || 0;
-        loginLockedUntil = data.loginLockedUntil || 0;
-        if (callback) callback();
-    });
+async function loadLoginRateLimit() {
+    const data = await chrome.storage.session.get(['loginFailures', 'loginLockedUntil']);
+    loginFailures = data.loginFailures ?? 0;
+    loginLockedUntil = data.loginLockedUntil ?? 0;
 }
 
 function saveLoginRateLimit() {
@@ -45,20 +47,18 @@ function saveLoginRateLimit() {
 
 
 function enableSpinner() {
-    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
     const spinner = document.createElement('div');
     spinner.className = 'spinner-border text-primary m-3';
     const label = document.createElement('div');
     label.textContent = msg('optionsCheckingStatus');
-    spinnerDiv.appendChild(spinner);
-    spinnerDiv.appendChild(label);
+    spinnerDiv.replaceChildren(spinner, label);
 }
 
 function disableSpinner() {
-    while (spinnerDiv.firstChild) spinnerDiv.removeChild(spinnerDiv.firstChild);
+    spinnerDiv.replaceChildren();
 }
 
-function setDangerMessage(message, timeout=3000) {
+function setDangerMessage(message, timeout=FEEDBACK_TIMEOUT) {
     if (!message) {
         alertDanger.hidden = true;
         return;
@@ -77,32 +77,31 @@ function getProtocol() {
     return useHTTPSInput.checked ? 'https' : 'http';
 }
 
-function updateLoggedInStatus(callback) {
+async function updateLoggedInStatus(callback) {
     saveButton.disabled = true;
     loginStatusOKDiv.hidden = true;
     loginStatusKODiv.hidden = true;
     loginButton.hidden = true;
     enableSpinner();
-    isLoggedIn(function(loggedIn, unauthorized, error) {
-        disableSpinner();
-        loginStatusOKDiv.hidden = !loggedIn;
-        loginStatusKODiv.hidden = loggedIn;
-        loginStatusKODiv.textContent = '';
-        const errIcon = document.createElement('i');
-        errIcon.className = 'fa fa-times small me-3';
-        loginStatusKODiv.appendChild(errIcon);
-        const msgSpan = document.createElement('span');
-        if (!loggedIn && unauthorized) {
-            msgSpan.textContent = msg('optionsPleaseLogIn');
-        } else {
-            msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
-        }
-        loginStatusKODiv.appendChild(msgSpan);
-        loginButton.hidden = !unauthorized;
-        saveButton.disabled = false;
-        if (loggedIn) loadAccounts();
-        if (callback) callback();
-    });
+    const { success: loggedIn, unauthorized, error } = await isLoggedIn();
+    disableSpinner();
+    loginStatusOKDiv.hidden = !loggedIn;
+    loginStatusKODiv.hidden = loggedIn;
+    loginStatusKODiv.replaceChildren();
+    const errIcon = document.createElement('i');
+    errIcon.className = 'fa fa-times small me-3';
+    loginStatusKODiv.appendChild(errIcon);
+    const msgSpan = document.createElement('span');
+    if (!loggedIn && unauthorized) {
+        msgSpan.textContent = msg('optionsPleaseLogIn');
+    } else {
+        msgSpan.textContent = error ? error : msg('optionsNotLoggedIn');
+    }
+    loginStatusKODiv.appendChild(msgSpan);
+    loginButton.hidden = !unauthorized;
+    saveButton.disabled = false;
+    if (loggedIn) loadAccounts();
+    if (callback) callback();
 }
 
 function requestPermission(callback) {
@@ -193,15 +192,14 @@ function updateCurrentURL() {
     currentURL.textContent = `${useHTTPSInput.checked ? 'https' : 'http'}://${serverIpInput.value}${portString}${serverPathInput.value}`;
 }
 
-saveButton.onclick = function(ev) {
-    setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default', function() {
-        requestPermission(function() {
-            renderServerList();
-            updateLoggedInStatus(function() {
-                if (!loginButton.hidden) {
-                    loginButton.click();
-                }
-            });
+saveButton.onclick = async function(ev) {
+    await setOrigin(serverIpInput.value, serverPortInput.value, getProtocol(), serverPathInput.value, serverNameInput.value.trim() || 'Default');
+    requestPermission(function() {
+        renderServerList();
+        updateLoggedInStatus(function() {
+            if (!loginButton.hidden) {
+                loginButton.click();
+            }
         });
     });
 };
@@ -216,7 +214,7 @@ rememberCredentials.onchange = function() {
     rememberWarning.hidden = !rememberCredentials.checked;
 }
 
-loginButtonModal.onclick = function(ev) {
+loginButtonModal.onclick = async function(ev) {
     const now = Date.now();
     if (now < loginLockedUntil) {
         const secs = Math.ceil((loginLockedUntil - now) / 1000);
@@ -224,86 +222,81 @@ loginButtonModal.onclick = function(ev) {
         return;
     }
     setDangerMessage('');
-    login(usernameInput.value, passwordInput.value, rememberCredentials.checked, function(success, error_msg) {
-        if (success) {
-            loginFailures = 0;
-            loginLockedUntil = 0;
+    const { success, error: error_msg } = await login(usernameInput.value, passwordInput.value, rememberCredentials.checked);
+    if (success) {
+        loginFailures = 0;
+        loginLockedUntil = 0;
+        saveLoginRateLimit();
+        if (loginModalInstance) loginModalInstance.hide();
+        updateLoggedInStatus();
+    } else {
+        loginFailures++;
+        if (loginFailures >= 3) {
+            const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
+            loginLockedUntil = Date.now() + lockSecs * 1000;
             saveLoginRateLimit();
-            if (loginModalInstance) loginModalInstance.hide();
-            updateLoggedInStatus();
+            setDangerMessage(msg('optionsTooManyAttempts', [String(lockSecs)]), 0);
         } else {
-            loginFailures++;
-            if (loginFailures >= 3) {
-                const lockSecs = Math.min(30 * Math.pow(2, loginFailures - 3), 300);
-                loginLockedUntil = Date.now() + lockSecs * 1000;
-                saveLoginRateLimit();
-                setDangerMessage(msg('optionsTooManyAttempts', [String(lockSecs)]), 0);
-            } else {
-                saveLoginRateLimit();
-                setDangerMessage(error_msg, 0);
-            }
+            saveLoginRateLimit();
+            setDangerMessage(error_msg, 0);
         }
-    });
+    }
 }
 
 // --- Server Management ---
 
+function buildServerRow(s) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 mb-1';
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${s.id === activeServerId ? 'bg-primary' : 'bg-secondary'}`;
+    badge.textContent = s.id === activeServerId ? msg('optionsActive') : msg('optionsInactive');
+
+    const label = document.createElement('span');
+    label.className = 'flex-grow-1';
+    label.textContent = `${s.name} — ${s.serverProtocol}://${s.serverIp}:${s.serverPort}${s.serverPath}`;
+
+    const activateBtn = document.createElement('button');
+    activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+    activateBtn.textContent = msg('optionsActivate');
+    activateBtn.hidden = s.id === activeServerId;
+    activateBtn.onclick = async function() {
+        await setActiveServer(s.id);
+        await pullStoredData();
+        renderServerList();
+        updateForm();
+        updateLoggedInStatus();
+    };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+    deleteBtn.textContent = msg('optionsDelete');
+    deleteBtn.onclick = async function() {
+        if (!confirm(msg('optionsConfirmDeleteServer'))) return;
+        await removeServer(s.id);
+        await pullStoredData();
+        renderServerList();
+        updateForm();
+        updateLoggedInStatus();
+    };
+
+    row.appendChild(badge);
+    row.appendChild(label);
+    row.appendChild(activateBtn);
+    row.appendChild(deleteBtn);
+    return row;
+}
+
 function renderServerList() {
-    serverListDiv.textContent = '';
     if (!servers.length) {
         const noServers = document.createElement('span');
         noServers.className = 'text-muted';
         noServers.textContent = msg('optionsNoServers');
-        serverListDiv.appendChild(noServers);
+        serverListDiv.replaceChildren(noServers);
         return;
     }
-    servers.forEach(function(s) {
-        const row = document.createElement('div');
-        row.className = 'd-flex align-items-center gap-2 mb-1';
-
-        const badge = document.createElement('span');
-        badge.className = `badge ${s.id === activeServerId ? 'bg-primary' : 'bg-secondary'}`;
-        badge.textContent = s.id === activeServerId ? msg('optionsActive') : msg('optionsInactive');
-
-        const label = document.createElement('span');
-        label.className = 'flex-grow-1';
-        label.textContent = `${s.name} — ${s.serverProtocol}://${s.serverIp}:${s.serverPort}${s.serverPath}`;
-
-        const activateBtn = document.createElement('button');
-        activateBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
-        activateBtn.textContent = msg('optionsActivate');
-        activateBtn.hidden = s.id === activeServerId;
-        activateBtn.onclick = function() {
-            setActiveServer(s.id, function() {
-                pullStoredData(function() {
-                    renderServerList();
-                    updateForm();
-                    updateLoggedInStatus();
-                });
-            });
-        };
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-        deleteBtn.textContent = msg('optionsDelete');
-        deleteBtn.disabled = false;
-        deleteBtn.onclick = function() {
-            if (!confirm(msg('optionsConfirmDeleteServer'))) return;
-            removeServer(s.id, function() {
-                pullStoredData(function() {
-                    renderServerList();
-                    updateForm();
-                    updateLoggedInStatus();
-                });
-            });
-        };
-
-        row.appendChild(badge);
-        row.appendChild(label);
-        row.appendChild(activateBtn);
-        row.appendChild(deleteBtn);
-        serverListDiv.appendChild(row);
-    });
+    serverListDiv.replaceChildren(...servers.map(buildServerRow));
 }
 
 function updateForm() {
@@ -315,7 +308,7 @@ function updateForm() {
     updateCurrentURL();
 }
 
-addServerButton.onclick = function() {
+addServerButton.onclick = async function() {
     const config = {
         name: serverNameInput.value.trim() || msg('optionsNewServer'),
         serverIp: serverIpInput.value.trim() || 'localhost',
@@ -323,29 +316,82 @@ addServerButton.onclick = function() {
         serverProtocol: getProtocol(),
         serverPath: serverPathInput.value || '/'
     };
-    addServer(config, function(s) {
-        setActiveServer(s.id, function() {
-            pullStoredData(function() {
-                renderServerList();
-                updateForm();
-                updateLoggedInStatus();
-            });
-        });
-    });
+    const s = await addServer(config);
+    await setActiveServer(s.id);
+    await pullStoredData();
+    renderServerList();
+    updateForm();
+    updateLoggedInStatus();
 };
 
 // --- Hoster Accounts ---
 
-let accountsDiv = document.getElementById('accountsDiv');
-let accountPlugin = document.getElementById('accountPlugin');
-let accountLogin = document.getElementById('accountLogin');
-let accountPassword = document.getElementById('accountPassword');
-let addAccountButton = document.getElementById('addAccountButton');
-let accountFeedback = document.getElementById('accountFeedback');
-let accountSuccess = document.getElementById('accountSuccess');
+const accountsDiv = document.getElementById('accountsDiv');
+const accountPlugin = document.getElementById('accountPlugin');
+const accountLogin = document.getElementById('accountLogin');
+const accountPassword = document.getElementById('accountPassword');
+const addAccountButton = document.getElementById('addAccountButton');
+const accountFeedback = document.getElementById('accountFeedback');
+const accountSuccess = document.getElementById('accountSuccess');
+
+function buildAccountRow({ plugin, login: accLogin, valid }) {
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 mb-1';
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${valid ? 'bg-success' : 'bg-danger'}`;
+    badge.textContent = valid ? msg('optionsValid') : msg('optionsInvalid');
+
+    const label = document.createElement('span');
+    label.className = 'flex-grow-1';
+    label.textContent = `${plugin} — ${accLogin}`;
+
+    const testBtn = document.createElement('button');
+    testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
+    testBtn.textContent = msg('optionsTestAccount');
+    testBtn.onclick = async function() {
+        testBtn.disabled = true;
+        const spin = document.createElement('span');
+        spin.className = 'spinner-border spinner-border-sm';
+        testBtn.replaceChildren(spin);
+        const refreshed = await getAccounts(true);
+        testBtn.disabled = false;
+        testBtn.textContent = msg('optionsTestAccount');
+        const list = refreshed[plugin] || [];
+        const found = list.find(function(a) { return a.login === accLogin; });
+        if (found && found.valid) {
+            badge.className = 'badge bg-success';
+            badge.textContent = msg('optionsValid');
+            accountSuccess.textContent = msg('optionsAccountValid');
+            accountSuccess.hidden = false;
+            accountFeedback.hidden = true;
+        } else {
+            badge.className = 'badge bg-danger';
+            badge.textContent = msg('optionsInvalid');
+            accountFeedback.textContent = msg('optionsAccountInvalid');
+            accountFeedback.hidden = false;
+            accountSuccess.hidden = true;
+        }
+    };
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
+    removeBtn.textContent = msg('optionsRemove');
+    removeBtn.onclick = async function() {
+        if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
+        removeBtn.disabled = true;
+        await removeAccount(plugin, accLogin);
+        loadAccounts();
+    };
+
+    row.appendChild(badge);
+    row.appendChild(label);
+    row.appendChild(testBtn);
+    row.appendChild(removeBtn);
+    return row;
+}
 
 function renderAccounts(accounts) {
-    accountsDiv.textContent = '';
     const entries = [];
     for (const [plugin, list] of Object.entries(accounts)) {
         list.forEach(acc => entries.push({ plugin, login: acc.login, valid: acc.valid }));
@@ -354,78 +400,22 @@ function renderAccounts(accounts) {
         const empty = document.createElement('div');
         empty.className = 'text-muted text-center';
         empty.textContent = msg('optionsNoAccounts');
-        accountsDiv.appendChild(empty);
+        accountsDiv.replaceChildren(empty);
         return;
     }
-    entries.forEach(function(acc) {
-        const row = document.createElement('div');
-        row.className = 'd-flex align-items-center gap-2 mb-1';
-
-        const badge = document.createElement('span');
-        badge.className = `badge ${acc.valid ? 'bg-success' : 'bg-danger'}`;
-        badge.textContent = acc.valid ? msg('optionsValid') : msg('optionsInvalid');
-
-        const label = document.createElement('span');
-        label.className = 'flex-grow-1';
-        label.textContent = `${acc.plugin} — ${acc.login}`;
-
-        const testBtn = document.createElement('button');
-        testBtn.className = 'btn btn-sm btn-outline-primary py-0 px-1';
-        testBtn.textContent = msg('optionsTestAccount');
-        testBtn.onclick = function() {
-            testBtn.disabled = true;
-            testBtn.textContent = '';
-            const spin = document.createElement('span');
-            spin.className = 'spinner-border spinner-border-sm';
-            testBtn.appendChild(spin);
-            getAccounts(function(refreshed) {
-                testBtn.disabled = false;
-                testBtn.textContent = msg('optionsTestAccount');
-                const list = refreshed[acc.plugin] || [];
-                const found = list.find(function(a) { return a.login === acc.login; });
-                if (found && found.valid) {
-                    badge.className = 'badge bg-success';
-                    badge.textContent = msg('optionsValid');
-                    accountSuccess.textContent = msg('optionsAccountValid');
-                    accountSuccess.hidden = false;
-                    accountFeedback.hidden = true;
-                } else {
-                    badge.className = 'badge bg-danger';
-                    badge.textContent = msg('optionsInvalid');
-                    accountFeedback.textContent = msg('optionsAccountInvalid');
-                    accountFeedback.hidden = false;
-                    accountSuccess.hidden = true;
-                }
-            }, true);
-        };
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'btn btn-sm btn-outline-danger py-0 px-1';
-        removeBtn.textContent = msg('optionsRemove');
-        removeBtn.onclick = function() {
-            if (!confirm(msg('optionsConfirmDeleteAccount'))) return;
-            removeBtn.disabled = true;
-            removeAccount(acc.plugin, acc.login, function() { loadAccounts(); });
-        };
-
-        row.appendChild(badge);
-        row.appendChild(label);
-        row.appendChild(testBtn);
-        row.appendChild(removeBtn);
-        accountsDiv.appendChild(row);
-    });
+    accountsDiv.replaceChildren(...entries.map(buildAccountRow));
 }
 
-function loadAccounts() {
-    accountsDiv.textContent = '';
+async function loadAccounts() {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'text-muted text-center';
     loadingDiv.textContent = msg('optionsLoading');
-    accountsDiv.appendChild(loadingDiv);
-    getAccounts(function(accounts) { renderAccounts(accounts); });
+    accountsDiv.replaceChildren(loadingDiv);
+    const accounts = await getAccounts();
+    renderAccounts(accounts);
 }
 
-addAccountButton.onclick = function() {
+addAccountButton.onclick = async function() {
     const plugin = accountPlugin.value.trim();
     const login = accountLogin.value.trim();
     const password = accountPassword.value;
@@ -437,33 +427,32 @@ addAccountButton.onclick = function() {
         return;
     }
     addAccountButton.disabled = true;
-    updateAccount(plugin, login, password, function(ok) {
-        addAccountButton.disabled = false;
-        if (ok) {
-            accountPlugin.value = '';
-            accountLogin.value = '';
-            accountPassword.value = '';
-            accountSuccess.textContent = msg('optionsAccountAdded');
-            accountSuccess.hidden = false;
-            loadAccounts();
-        } else {
-            accountFeedback.textContent = msg('optionsAccountFailed');
-            accountFeedback.hidden = false;
-        }
-    });
+    const ok = await updateAccount(plugin, login, password);
+    addAccountButton.disabled = false;
+    if (ok) {
+        accountPlugin.value = '';
+        accountLogin.value = '';
+        accountPassword.value = '';
+        accountSuccess.textContent = msg('optionsAccountAdded');
+        accountSuccess.hidden = false;
+        loadAccounts();
+    } else {
+        accountFeedback.textContent = msg('optionsAccountFailed');
+        accountFeedback.hidden = false;
+    }
 };
 
 // --- Log Viewer ---
 
-let loadLogButton = document.getElementById('loadLogButton');
-let logOutput = document.getElementById('logOutput');
-let logControls = document.getElementById('logControls');
-let logSearchInput = document.getElementById('logSearchInput');
-let logLevelFilter = document.getElementById('logLevelFilter');
-let logPagination = document.getElementById('logPagination');
-let logPrevBtn = document.getElementById('logPrevBtn');
-let logNextBtn = document.getElementById('logNextBtn');
-let logPageInfo = document.getElementById('logPageInfo');
+const loadLogButton = document.getElementById('loadLogButton');
+const logOutput = document.getElementById('logOutput');
+const logControls = document.getElementById('logControls');
+const logSearchInput = document.getElementById('logSearchInput');
+const logLevelFilter = document.getElementById('logLevelFilter');
+const logPagination = document.getElementById('logPagination');
+const logPrevBtn = document.getElementById('logPrevBtn');
+const logNextBtn = document.getElementById('logNextBtn');
+const logPageInfo = document.getElementById('logPageInfo');
 
 let logAllLines = [];
 let logPageSize = 100;
@@ -496,15 +485,14 @@ function renderLogPage() {
     logPagination.hidden = totalPages <= 1;
 }
 
-loadLogButton.onclick = function() {
+loadLogButton.onclick = async function() {
     loadLogButton.disabled = true;
-    getLog(0, function(lines) {
-        loadLogButton.disabled = false;
-        logAllLines = lines || [];
-        logCurrentPage = 0;
-        logControls.hidden = false;
-        renderLogPage();
-    });
+    const lines = await getLog(0);
+    loadLogButton.disabled = false;
+    logAllLines = lines || [];
+    logCurrentPage = 0;
+    logControls.hidden = false;
+    renderLogPage();
 };
 
 logSearchInput.oninput = function() { logCurrentPage = 0; renderLogPage(); };
@@ -512,26 +500,31 @@ logLevelFilter.onchange = function() { logCurrentPage = 0; renderLogPage(); };
 logPrevBtn.onclick = function() { if (logCurrentPage > 0) { logCurrentPage--; renderLogPage(); } };
 logNextBtn.onclick = function() { logCurrentPage++; renderLogPage(); };
 
-let autoRetryToggle = document.getElementById('autoRetryToggle');
+const autoRetryToggle = document.getElementById('autoRetryToggle');
 autoRetryToggle.onchange = function() {
     setAutoRetryEnabled(autoRetryToggle.checked);
 };
 
-let localeSelect = document.getElementById('localeSelect');
+const localeSelect = document.getElementById('localeSelect');
 localeSelect.value = getLocale();
 localeSelect.onchange = function() {
     setLocale(localeSelect.value);
 };
 
+const themeSelect = document.getElementById('themeSelect');
+themeSelect.onchange = function() {
+    setThemeMode(themeSelect.value);
+};
+
 // --- Telegram Notifications ---
 
-let telegramEnabled = document.getElementById('telegramEnabled');
-let telegramBotToken = document.getElementById('telegramBotToken');
-let telegramChatId = document.getElementById('telegramChatId');
-let telegramSaveBtn = document.getElementById('telegramSaveBtn');
-let telegramTestBtn = document.getElementById('telegramTestBtn');
-let telegramFeedback = document.getElementById('telegramFeedback');
-let telegramConfigFields = document.getElementById('telegramConfigFields');
+const telegramEnabled = document.getElementById('telegramEnabled');
+const telegramBotToken = document.getElementById('telegramBotToken');
+const telegramChatId = document.getElementById('telegramChatId');
+const telegramSaveBtn = document.getElementById('telegramSaveBtn');
+const telegramTestBtn = document.getElementById('telegramTestBtn');
+const telegramFeedback = document.getElementById('telegramFeedback');
+const telegramConfigFields = document.getElementById('telegramConfigFields');
 
 function showTelegramFeedback(text, isError) {
     telegramFeedback.textContent = text;
@@ -553,33 +546,30 @@ function readTelegramForm() {
     };
 }
 
-function loadTelegramConfig() {
-    getTelegramConfig(function(config) {
-        telegramEnabled.checked = config.enabled;
-        telegramBotToken.value = config.botToken;
-        telegramChatId.value = config.chatId;
-        document.querySelectorAll('.telegram-event').forEach(function(cb) {
-            if (config.events.hasOwnProperty(cb.dataset.event)) {
-                cb.checked = config.events[cb.dataset.event];
-            }
-        });
+async function loadTelegramConfig() {
+    const config = await getTelegramConfig();
+    telegramEnabled.checked = config.enabled;
+    telegramBotToken.value = config.botToken;
+    telegramChatId.value = config.chatId;
+    document.querySelectorAll('.telegram-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
     });
 }
 
-telegramSaveBtn.onclick = function() {
+telegramSaveBtn.onclick = async function() {
     telegramSaveBtn.disabled = true;
-    setTelegramConfig(readTelegramForm(), function() {
-        telegramSaveBtn.disabled = false;
-        showTelegramFeedback(msg('optionsTelegramSaved'), false);
-    });
+    await setTelegramConfig(readTelegramForm());
+    telegramSaveBtn.disabled = false;
+    showTelegramFeedback(msg('optionsTelegramSaved'), false);
 };
 
 telegramTestBtn.onclick = async function() {
     telegramTestBtn.disabled = true;
-    telegramTestBtn.textContent = '';
     const tgSpin = document.createElement('span');
     tgSpin.className = 'spinner-border spinner-border-sm';
-    telegramTestBtn.appendChild(tgSpin);
+    telegramTestBtn.replaceChildren(tgSpin);
     const form = readTelegramForm();
     const result = await testTelegramConfig(form.botToken, form.chatId);
     telegramTestBtn.disabled = false;
@@ -591,10 +581,137 @@ telegramTestBtn.onclick = async function() {
     }
 };
 
-loadLoginRateLimit();
-pullStoredData(async function() {
+// --- Discord Notifications ---
+
+const discordEnabled = document.getElementById('discordEnabled');
+const discordWebhookUrl = document.getElementById('discordWebhookUrl');
+const discordSaveBtn = document.getElementById('discordSaveBtn');
+const discordTestBtn = document.getElementById('discordTestBtn');
+const discordFeedback = document.getElementById('discordFeedback');
+
+function showDiscordFeedback(text, isError) {
+    discordFeedback.textContent = text;
+    discordFeedback.className = `mt-2 small ${isError ? 'text-danger' : 'text-success'}`;
+    discordFeedback.hidden = false;
+    setTimeout(() => { discordFeedback.hidden = true; }, 5000);
+}
+
+function readDiscordForm() {
+    const events = {};
+    document.querySelectorAll('.discord-event').forEach(function(cb) {
+        events[cb.dataset.event] = cb.checked;
+    });
+    return {
+        enabled: discordEnabled.checked,
+        webhookUrl: discordWebhookUrl.value.trim(),
+        events
+    };
+}
+
+async function loadDiscordConfig() {
+    const config = await getDiscordConfig();
+    discordEnabled.checked = config.enabled;
+    discordWebhookUrl.value = config.webhookUrl;
+    document.querySelectorAll('.discord-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
+    });
+}
+
+discordSaveBtn.onclick = async function() {
+    discordSaveBtn.disabled = true;
+    await setDiscordConfig(readDiscordForm());
+    discordSaveBtn.disabled = false;
+    showDiscordFeedback(msg('optionsDiscordSaved'), false);
+};
+
+discordTestBtn.onclick = async function() {
+    discordTestBtn.disabled = true;
+    const spin = document.createElement('span');
+    spin.className = 'spinner-border spinner-border-sm';
+    discordTestBtn.replaceChildren(spin);
+    const form = readDiscordForm();
+    const result = await testDiscordWebhook(form.webhookUrl);
+    discordTestBtn.disabled = false;
+    discordTestBtn.textContent = msg('optionsDiscordTest');
+    if (result.ok) {
+        showDiscordFeedback(msg('optionsDiscordTestSuccess'), false);
+    } else {
+        showDiscordFeedback(msg('optionsDiscordTestFailed', [result.error]), true);
+    }
+};
+
+// --- ntfy Notifications ---
+
+const ntfyEnabled = document.getElementById('ntfyEnabled');
+const ntfyServerUrl = document.getElementById('ntfyServerUrl');
+const ntfyTopic = document.getElementById('ntfyTopic');
+const ntfySaveBtn = document.getElementById('ntfySaveBtn');
+const ntfyTestBtn = document.getElementById('ntfyTestBtn');
+const ntfyFeedback = document.getElementById('ntfyFeedback');
+
+function showNtfyFeedback(text, isError) {
+    ntfyFeedback.textContent = text;
+    ntfyFeedback.className = `mt-2 small ${isError ? 'text-danger' : 'text-success'}`;
+    ntfyFeedback.hidden = false;
+    setTimeout(() => { ntfyFeedback.hidden = true; }, 5000);
+}
+
+function readNtfyForm() {
+    const events = {};
+    document.querySelectorAll('.ntfy-event').forEach(function(cb) {
+        events[cb.dataset.event] = cb.checked;
+    });
+    return {
+        enabled: ntfyEnabled.checked,
+        serverUrl: ntfyServerUrl.value.trim() || 'https://ntfy.sh',
+        topic: ntfyTopic.value.trim(),
+        events
+    };
+}
+
+async function loadNtfyConfig() {
+    const config = await getNtfyConfig();
+    ntfyEnabled.checked = config.enabled;
+    ntfyServerUrl.value = config.serverUrl;
+    ntfyTopic.value = config.topic;
+    document.querySelectorAll('.ntfy-event').forEach(function(cb) {
+        if (Object.hasOwn(config.events, cb.dataset.event)) {
+            cb.checked = config.events[cb.dataset.event];
+        }
+    });
+}
+
+ntfySaveBtn.onclick = async function() {
+    ntfySaveBtn.disabled = true;
+    await setNtfyConfig(readNtfyForm());
+    ntfySaveBtn.disabled = false;
+    showNtfyFeedback(msg('optionsNtfySaved'), false);
+};
+
+ntfyTestBtn.onclick = async function() {
+    ntfyTestBtn.disabled = true;
+    const spin = document.createElement('span');
+    spin.className = 'spinner-border spinner-border-sm';
+    ntfyTestBtn.replaceChildren(spin);
+    const form = readNtfyForm();
+    const result = await testNtfyConfig(form.serverUrl, form.topic);
+    ntfyTestBtn.disabled = false;
+    ntfyTestBtn.textContent = msg('optionsNtfyTest');
+    if (result.ok) {
+        showNtfyFeedback(msg('optionsNtfyTestSuccess'), false);
+    } else {
+        showNtfyFeedback(msg('optionsNtfyTestFailed', [result.error]), true);
+    }
+};
+
+(async function() {
+    await loadLoginRateLimit();
+    await pullStoredData();
     await initLocale();
     localeSelect.value = getLocale();
+    themeSelect.value = await getThemeMode();
     applyI18n();
     renderServerList();
     updateForm();
@@ -605,11 +722,12 @@ pullStoredData(async function() {
     useHTTPSInput.oninput = requireSaving;
     serverPathInput.oninput = requireSaving;
 
-    isAutoRetryEnabled(function(enabled) {
-        autoRetryToggle.checked = enabled;
-    });
+    const enabled = await isAutoRetryEnabled();
+    autoRetryToggle.checked = enabled;
 
-    loadTelegramConfig();
+    await loadTelegramConfig();
+    await loadDiscordConfig();
+    await loadNtfyConfig();
 
     updateLoggedInStatus(function() {
         document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -621,4 +739,4 @@ pullStoredData(async function() {
     document.getElementById('password').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') document.getElementById('loginButtonModal').click();
     });
-});
+})();

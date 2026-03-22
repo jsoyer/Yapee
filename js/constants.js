@@ -1,0 +1,17 @@
+export const API_TIMEOUT = 5000;
+export const TELEGRAM_TIMEOUT = 10000;
+export const UPLOAD_TIMEOUT = 30000;
+export const INITIAL_RETRY_BACKOFF = 60000;
+export const MAX_RETRY_BACKOFF = 3600000;
+export const MAX_RETRY_ATTEMPTS = 5;
+export const MIN_SEND_INTERVAL = 1000;
+export const POLL_FALLBACK_INTERVAL = 3000;
+export const HISTORY_MAX = 1000;
+export const HISTORY_DISPLAY_LIMIT = 100;
+export const MAX_HOSTERS_DISPLAY = 10;
+export const MAX_SPEED_INPUT = 100000;
+export const MAX_CONTAINER_SIZE = 10 * 1024 * 1024;
+export const SEARCH_DEBOUNCE_MS = 300;
+export const CAPTCHA_DANGER_THRESHOLD = 120000;
+export const FEEDBACK_TIMEOUT = 3000;
+export const ALARM_PERIOD_MINUTES = 0.5;

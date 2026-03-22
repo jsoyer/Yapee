@@ -8,6 +8,9 @@ window.addEventListener('message', (event) => {
     try {
         const parsed = new URL(url);
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
+        const pageHost = window.location.hostname;
+        const urlHost = parsed.hostname;
+        if (pageHost !== urlHost && !urlHost.endsWith('.' + pageHost) && !pageHost.endsWith('.' + urlHost)) return;
     } catch { return; }
     chrome.runtime.sendMessage({ action: 'addPackage', url, name }, (response) => {
         window.postMessage({

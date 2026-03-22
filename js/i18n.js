@@ -7,26 +7,18 @@ let _locale = 'auto';
  * Must be called (and awaited) before applyI18n() for the override to work.
  */
 export async function initLocale() {
-    return new Promise(function (resolve) {
-        chrome.storage.local.get(['locale'], function (data) {
-            _locale = data.locale || 'auto';
-            if (_locale === 'auto') {
-                _messages = null;
-                resolve();
-            } else {
-                fetch(chrome.runtime.getURL('_locales/' + _locale + '/messages.json'))
-                    .then(function (r) { return r.json(); })
-                    .then(function (json) {
-                        _messages = json;
-                        resolve();
-                    })
-                    .catch(function () {
-                        _messages = null;
-                        resolve();
-                    });
-            }
-        });
-    });
+    const data = await chrome.storage.local.get(['locale']);
+    _locale = data.locale ?? 'auto';
+    if (_locale === 'auto') {
+        _messages = null;
+        return;
+    }
+    try {
+        const r = await fetch(chrome.runtime.getURL(`_locales/${_locale}/messages.json`));
+        _messages = await r.json();
+    } catch {
+        _messages = null;
+    }
 }
 
 /**
@@ -41,13 +33,9 @@ export function getLocale() {
  * Pass 'auto' to revert to browser detection.
  */
 export async function setLocale(locale) {
-    return new Promise(function (resolve) {
-        chrome.storage.local.set({ locale: locale }, async function () {
-            await initLocale();
-            applyI18n();
-            resolve();
-        });
-    });
+    await chrome.storage.local.set({ locale });
+    await initLocale();
+    applyI18n();
 }
 
 /**
@@ -57,11 +45,11 @@ export async function setLocale(locale) {
  */
 export function msg(key, substitutions) {
     if (_messages && _messages[key]) {
-        var text = _messages[key].message;
+        let text = _messages[key].message;
         if (substitutions) {
-            var subs = Array.isArray(substitutions) ? substitutions : [substitutions];
-            for (var i = 0; i < subs.length; i++) {
-                text = text.replace('$' + (i + 1), subs[i]);
+            const subs = Array.isArray(substitutions) ? substitutions : [substitutions];
+            for (let i = 0; i < subs.length; i++) {
+                text = text.replace(`$${i + 1}`, subs[i]);
             }
         }
         return text || key;
@@ -74,19 +62,19 @@ export function msg(key, substitutions) {
  */
 export function applyI18n() {
     document.querySelectorAll('[data-i18n]').forEach(function (el) {
-        var text = msg(el.dataset.i18n);
+        const text = msg(el.dataset.i18n);
         if (text && text !== el.dataset.i18n) el.textContent = text;
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
-        var text = msg(el.dataset.i18nPlaceholder);
+        const text = msg(el.dataset.i18nPlaceholder);
         if (text && text !== el.dataset.i18nPlaceholder) el.placeholder = text;
     });
     document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
-        var text = msg(el.dataset.i18nTitle);
+        const text = msg(el.dataset.i18nTitle);
         if (text && text !== el.dataset.i18nTitle) el.title = text;
     });
     document.querySelectorAll('[data-i18n-aria]').forEach(function (el) {
-        var text = msg(el.dataset.i18nAria);
+        const text = msg(el.dataset.i18nAria);
         if (text && text !== el.dataset.i18nAria) el.setAttribute('aria-label', text);
     });
 }

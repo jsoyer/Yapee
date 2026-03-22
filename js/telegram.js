@@ -1,7 +1,7 @@
 import { getTelegramConfig } from './storage.js';
+import { TELEGRAM_TIMEOUT, MIN_SEND_INTERVAL } from './constants.js';
 
 const TELEGRAM_API = 'https://api.telegram.org/bot';
-const MIN_SEND_INTERVAL = 1000;
 let lastSentTime = 0;
 const sendQueue = [];
 let processing = false;
@@ -12,7 +12,7 @@ function escapeHtml(text) {
 
 async function doSend(botToken, chatId, text) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT);
     try {
         const res = await fetch(`${TELEGRAM_API}${botToken}/sendMessage`, {
             method: 'POST',
@@ -48,19 +48,19 @@ function processQueue() {
     }, wait);
 }
 
-export function sendTelegramNotification(title, message, eventType) {
-    getTelegramConfig(function(config) {
-        if (!config.enabled || !config.botToken || !config.chatId) return;
-        if (!config.events[eventType]) return;
+export async function sendTelegramNotification(title, message, eventType) {
+    const config = await getTelegramConfig();
+    if (!config.enabled || !config.botToken || !config.chatId) return;
+    if (!config.events[eventType]) return;
 
-        const parts = [`<b>Yapee</b>`];
-        if (title && title !== 'Yapee') parts.push(escapeHtml(title));
-        if (message) parts.push(escapeHtml(message));
-        const text = parts.join('\n');
+    const parts = [`<b>Yapee</b>`];
+    if (title && title !== 'Yapee') parts.push(escapeHtml(title));
+    if (message) parts.push(escapeHtml(message));
+    const text = parts.join('\n');
 
-        sendQueue.push({ botToken: config.botToken, chatId: config.chatId, text });
-        processQueue();
-    });
+    if (sendQueue.length >= 50) sendQueue.shift();
+    sendQueue.push({ botToken: config.botToken, chatId: config.chatId, text });
+    processQueue();
 }
 
 export async function testTelegramConfig(botToken, chatId) {
@@ -70,9 +70,12 @@ export async function testTelegramConfig(botToken, chatId) {
     if (!/^\d+:[A-Za-z0-9_-]+$/.test(botToken)) {
         return { ok: false, error: 'Invalid bot token format' };
     }
+    if (!/^-?\d+$/.test(chatId)) {
+        return { ok: false, error: 'Invalid chat ID format' };
+    }
     try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        const timeoutId = setTimeout(() => controller.abort(), TELEGRAM_TIMEOUT);
         const meRes = await fetch(`${TELEGRAM_API}${botToken}/getMe`, {
             signal: controller.signal
         });
